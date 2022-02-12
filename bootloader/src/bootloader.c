@@ -1,6 +1,6 @@
 /**
  * @file bootloader.c
- * @author Kyle Scaplen
+ * @author Kyle Scaplen - Modified by Dillon Driskill
  * @brief Bootloader implementation
  * @date 2022
  * 
@@ -51,6 +51,8 @@
 
 #define CONFIGURATION_STORAGE_PTR  ((uint32_t)(CONFIGURATION_METADATA_PTR + FLASH_PAGE_SIZE))
 
+// I'm hoping this will do the encryption thing. No real way to know it works, i guess. Just if it compiles
+#define EXAMPLE_AES 1
 
 
 
@@ -241,7 +243,7 @@ void handle_update(void)
     }
 
     // Program last or only page of release message
-    if (rem_bytes % 4 != 0) {
+    if (rem_bytes % 4 != 0) {sd
         rem_bytes += 4 - (rem_bytes % 4); // Account for partial word
     }
     flash_write((uint32_t *)rel_msg_read_ptr, rel_msg_write_ptr, rem_bytes >> 2);
