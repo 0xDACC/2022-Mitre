@@ -243,7 +243,7 @@ void handle_update(void)
     }
 
     // Program last or only page of release message
-    if (rem_bytes % 4 != 0) {sd
+    if (rem_bytes % 4 != 0) {
         rem_bytes += 4 - (rem_bytes % 4); // Account for partial word
     }
     flash_write((uint32_t *)rel_msg_read_ptr, rel_msg_write_ptr, rem_bytes >> 2);
