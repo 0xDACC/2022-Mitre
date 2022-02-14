@@ -1,0 +1,24 @@
+# Keygen script for saffire
+# Team: 0xDACC
+# Author: Dillon Driskill
+
+import random
+
+def main():
+
+    f = open("/secrets/key", "wb")  # wb mode allows us to A) make the file B) empty it if it exists, and C) write byte values
+    keyarray = []
+
+    for i in range(0, 16):  # 16 bytes for a 128 bit key
+        keyarray.append(random.randrange(0,255))  # not the *most* secure method for key generation but i think for the scope of this ctf i think its ok
+
+    keybytes = bytearray(keyarray)  # and make that int array into a byte array
+    immutekey = bytes(keybytes)  # and now its an immutable array of bytes
+
+    f.write(immutekey) # and now the file has a bunch of stuff in it
+    f.close()
+
+    return 0
+
+if __name__ == "__main__":
+    main()

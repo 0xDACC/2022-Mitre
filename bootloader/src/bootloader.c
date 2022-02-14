@@ -51,11 +51,6 @@
 
 #define CONFIGURATION_STORAGE_PTR  ((uint32_t)(CONFIGURATION_METADATA_PTR + FLASH_PAGE_SIZE))
 
-// I'm hoping this will do the encryption thing. No real way to know it works, i guess. Just if it compiles
-#define EXAMPLE_AES 1
-
-
-
 // Firmware update constants
 #define FRAME_OK 0x00
 #define FRAME_BAD 0x01
@@ -292,7 +287,7 @@ int main(void) {
 
     uint8_t cmd = 0;
 
-#ifdef EXAMPLE_AES
+/* #ifdef EXAMPLE_AES
     // -------------------------------------------------------------------------
     // example encryption using tiny-AES-c
     // -------------------------------------------------------------------------
@@ -312,7 +307,7 @@ int main(void) {
     // -------------------------------------------------------------------------
     // end example
     // -------------------------------------------------------------------------
-#endif
+#endif */
 
     // Initialize IO components
     uart_init();

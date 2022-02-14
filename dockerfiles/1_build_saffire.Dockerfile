@@ -29,6 +29,9 @@ ADD bootloader /bl_build
 
 # Generate Secrets
 RUN sh /host_tools/generate_secrets
+# Make sure there is an empty file named 'key' where the key will be stored
+RUN echo "" > /secrets/key
+RUN python3 /host_tools/keygen
 
 # Create EEPROM contents
 RUN echo "Bootloader Data" > /bootloader/eeprom.bin

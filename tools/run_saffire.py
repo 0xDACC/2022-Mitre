@@ -105,7 +105,7 @@ def kill_system(args):
 
 
 def build_system(args):
-
+    
     # Check for type
     if args.physical:
         parent = "alpine:3.12"
