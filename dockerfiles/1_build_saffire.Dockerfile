@@ -17,6 +17,9 @@ RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y python3 \
     binutils-arm-none-eabi gcc-arm-none-eabi make
 
+# Install aes encryption
+RUN pip3 install pycrypto
+
 # Create bootloader binary folder
 RUN mkdir /bootloader
 
