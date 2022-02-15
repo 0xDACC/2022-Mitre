@@ -6,7 +6,7 @@ import os
 
 def main():
 
-    f = open("./secrets/key", "wb")  # wb mode allows us to A) make the file B) empty it if it exists, and C) write byte values
+    f = open("/secrets/key", "wb")  # wb mode allows us to A) make the file B) empty it if it exists, and C) write byte values
     key = os.urandom(16)  # Generate 16 random bytes for the 128 bit key
 
     keybytes = bytearray(key)  # and make that int array into a byte array
