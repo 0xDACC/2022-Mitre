@@ -2,17 +2,14 @@
 # Team: 0xDACC
 # Author: Dillon Driskill
 
-import secrets
+import os
 
 def main():
 
-    f = open("/secrets/key", "wb")  # wb mode allows us to A) make the file B) empty it if it exists, and C) write byte values
-    keyarray = []
+    f = open("./secrets/key", "wb")  # wb mode allows us to A) make the file B) empty it if it exists, and C) write byte values
+    key = os.urandom(16)  # Generate 16 random bytes for the 128 bit key
 
-    for i in range(0, 16):  # 16 bytes for a 128 bit key
-        keyarray.append(secrets.randbelow(256))  # not the *most* secure method for key generation but i think for the scope of this ctf i think its ok
-
-    keybytes = bytearray(keyarray)  # and make that int array into a byte array
+    keybytes = bytearray(key)  # and make that int array into a byte array
     immutekey = bytes(keybytes)  # and now its an immutable array of bytes
 
     f.write(immutekey) # and now the file has a bunch of stuff in it
