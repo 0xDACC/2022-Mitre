@@ -12,6 +12,7 @@
 # Use this code at your own risk!
 
 import argparse
+from importlib.resources import path
 import json
 import logging
 import Crypto
@@ -46,9 +47,54 @@ def protect_firmware(
         "firmware": firmware_data.hex(),
     }
 
-    # Write to the output file
-    with protected_firmware.open("w", encoding="utf8") as fd:
-        json.dump(data, fd)
+    # Pack the firmware
+    packed_path = Path("./firmware/packed-fw-file")
+
+    # Open/create a new file which will contain the packed fw info, but be completely unencrypted
+    """with packed_path.open("w", encoding="utf8") as pp:  # pp LOL
+        json.dump(data. fd)"""
+
+    """from pathlib import Path
+import json
+import os
+import Crypto
+from Crypto.Cipher import AES
+
+def main():
+    stuff = Path("./here/hello")
+    cumstuff = Path("here/cumstuff")
+    poop = Path("here/poop")
+    writing = os.urandom(16)
+
+    iv = os.urandom(16)
+    key = os.urandom(16)
+
+    data = {
+        "cum" : 1234,
+        "penis" :"bagasdaina!",
+        "twelve" : 11
+
+    }
+
+    stuff.write_bytes(writing)
+    
+    with cumstuff.open("w", encoding="utf8") as st:
+        json.dump(data,st)
+    
+    asd = open(cumstuff, "rb")
+    rad = bytes(chr(asd.read()).append(os.urandom(len(asd) % 16)))
+    port = open(poop, "wb")
+
+    cip = AES.new(key, AES.MODE_CBC, iv)
+    port.write(cip.encrypt(plaintext=rad))
+
+
+
+
+
+if __name__ == "__main__":
+    main()
+"""
 
     log.info("Firmware protected\n")
 
