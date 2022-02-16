@@ -1,6 +1,6 @@
 # Keygen script for saffire
 # Team: 0xDACC
-# Author: Dillon Driskill
+# Author: Dillon Driskill and Matthew Weikel
 
 import os
 
@@ -14,6 +14,15 @@ def main():
 
     f.write(immutekey) # and now the file has a bunch of stuff in it
     f.close()
+
+    ifile = open("/secrets/iv", "wb")  # new file for the iv
+    iv = os.urandom(16)  # 128 bits
+
+    ivbytes = bytearray(iv)
+    immuteiv = bytes(ivbytes)
+
+    ifile.write(immuteiv)  # iv made
+    ifile.close()
 
     return 0
 

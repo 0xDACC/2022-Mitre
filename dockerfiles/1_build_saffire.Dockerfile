@@ -18,7 +18,7 @@ RUN apt-get update && apt-get upgrade -y && \
     binutils-arm-none-eabi gcc-arm-none-eabi make
 
 # Install aes encryption
-RUN pip3 install pycrypto
+RUN python3 -m pip install PyCryptodome
 
 # Create bootloader binary folder
 RUN mkdir /bootloader
