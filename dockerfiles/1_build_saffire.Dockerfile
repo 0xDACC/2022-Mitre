@@ -30,11 +30,10 @@ RUN mkdir /secrets
 ADD host_tools/ /host_tools
 ADD bootloader /bl_build
 
-# Generate Secrets
-RUN sh /host_tools/generate_secrets
 # Make sure there are empty files for key and iv
 RUN echo "" > /secrets/key
 RUN echo "" > /secrets/iv
+#Generate Keys
 RUN python3 /host_tools/keygen
 
 # Create EEPROM contents

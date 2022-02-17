@@ -15,7 +15,6 @@ import argparse
 from importlib.resources import path
 import json
 import logging
-import Crypto
 from Crypto.Cipher import AES
 from pathlib import Path
 
@@ -31,8 +30,23 @@ def protect_firmware(
     print_banner("SAFFIRe Firmware Protect Tool")
 
     # Read in the raw firmware binary
-    log.info("Reading the firmware...")
+    log.info("Reading the firmware...\n")
     firmware_data = firmware_file.read_bytes()
+
+    # Encrypt the firmware
+    log.info("Encrypting the firmware...\n")
+
+    key = Path("/secrets/key").read_bytes()
+    iv = Path("/secrets/iv").read_bytes()
+
+    # because we don't know the size of the file, we need to pad it with some extra data
+    padded_firmware = firmware_data
+    for i in range(0, (len(padded_firmware)%16)):
+        padded_firmware.join(b'\x00')
+
+    cipher = AES.new(key, AES.MODE_CBC, iv)  # creating new aes object. We can only use this object once.
+
+    encrypted_firmware = cipher.encrypt(padded_firmware)  # encrypt() returns a byte string e.g. b'0123456789abcdef'
 
     log.info("Packaging the firmware...")
 
@@ -44,57 +58,12 @@ def protect_firmware(
         "firmware_size": firmware_size,
         "version_num": version,
         "release_msg": release_message,
-        "firmware": firmware_data.hex(),
+        "firmware": encrypted_firmware.hex()
     }
-
-    # Pack the firmware
-    packed_path = Path("./firmware/packed-fw-file")
 
     # Open/create a new file which will contain the packed fw info, but be completely unencrypted
     """with packed_path.open("w", encoding="utf8") as pp:  # pp LOL
         json.dump(data. fd)"""
-
-    """from pathlib import Path
-import json
-import os
-import Crypto
-from Crypto.Cipher import AES
-
-def main():
-    stuff = Path("./here/hello")
-    cumstuff = Path("here/cumstuff")
-    poop = Path("here/poop")
-    writing = os.urandom(16)
-
-    iv = os.urandom(16)
-    key = os.urandom(16)
-
-    data = {
-        "cum" : 1234,
-        "penis" :"bagasdaina!",
-        "twelve" : 11
-
-    }
-
-    stuff.write_bytes(writing)
-    
-    with cumstuff.open("w", encoding="utf8") as st:
-        json.dump(data,st)
-    
-    asd = open(cumstuff, "rb")
-    rad = bytes(chr(asd.read()).append(os.urandom(len(asd) % 16)))
-    port = open(poop, "wb")
-
-    cip = AES.new(key, AES.MODE_CBC, iv)
-    port.write(cip.encrypt(plaintext=rad))
-
-
-
-
-
-if __name__ == "__main__":
-    main()
-"""
 
     log.info("Firmware protected\n")
 

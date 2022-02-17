@@ -3,26 +3,17 @@
 # Author: Dillon Driskill and Matthew Weikel
 
 import os
+from pathlib import Path
 
 def main():
 
-    f = open("/secrets/key", "wb")  # wb mode allows us to A) make the file B) empty it if it exists, and C) write byte values
-    key = os.urandom(16)  # Generate 16 random bytes for the 128 bit key
+    # Generate 128 bit (16 byte) key
+    key = Path("/secrets/key")
+    key.write_bytes(os.urandom(16))
 
-    keybytes = bytearray(key)  # and make that int array into a byte array
-    immutekey = bytes(keybytes)  # and now its an immutable array of bytes
-
-    f.write(immutekey) # and now the file has a bunch of stuff in it
-    f.close()
-
-    ifile = open("/secrets/iv", "wb")  # new file for the iv
-    iv = os.urandom(16)  # 128 bits
-
-    ivbytes = bytearray(iv)
-    immuteiv = bytes(ivbytes)
-
-    ifile.write(immuteiv)  # iv made
-    ifile.close()
+    # Generate 128 bit (16 byte) iv
+    iv = Path("/secrets/iv")
+    key.write_bytes(os.urandom(16))
 
     return 0
 
