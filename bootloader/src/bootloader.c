@@ -172,7 +172,6 @@ void load_data(uint32_t interface, uint32_t dst, uint32_t size)
 void handle_update(void)
 {
     // metadata
-    uint32_t current_version;
     uint32_t version = 0;
     uint32_t size = 0;
     uint32_t rel_msg_size = 0;
@@ -194,13 +193,7 @@ void handle_update(void)
     // Receive release message
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
 
-    // Check the version
-    current_version = *((uint32_t *)FIRMWARE_VERSION_PTR);
-    if (current_version == 0xFFFFFFFF) {
-        current_version = (uint32_t)OLDEST_VERSION;
-    }
-
-    if ((version != 0) && (version < current_version)) {
+    if ((version != 0) && (version < *FIRMWARE_VERSION_PTR)) {
         // Version is not acceptable
         uart_writeb(HOST_UART, FRAME_BAD);
         return;
@@ -212,8 +205,6 @@ void handle_update(void)
     // Only save new version if it is not 0
     if (version != 0) {
         flash_write_word(version, FIRMWARE_VERSION_PTR);
-    } else {
-        flash_write_word(current_version, FIRMWARE_VERSION_PTR);
     }
 
     // Save size
@@ -286,6 +277,10 @@ void handle_configure(void)
 int main(void) {
 
     uint8_t cmd = 0;
+    if (current_version == 0xFFFFFFFF){
+        uint32_t current_version = (uint32_t)OLDEST_VERSION;
+    }
+    flash_write_word(current_version, FIRMWARE_VERSION_PTR);
 
 /* #ifdef EXAMPLE_AES
     // -------------------------------------------------------------------------
