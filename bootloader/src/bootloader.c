@@ -278,9 +278,8 @@ int main(void) {
 
     uint8_t cmd = 0;
     if (current_version == 0xFFFFFFFF){
-        uint32_t current_version = (uint32_t)OLDEST_VERSION;
+        flash_write_word((uint32_t)OLDEST_VERSION, FIRMWARE_VERSION_PTR);
     }
-    flash_write_word(current_version, FIRMWARE_VERSION_PTR);
 
 /* #ifdef EXAMPLE_AES
     // -------------------------------------------------------------------------
