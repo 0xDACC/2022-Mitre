@@ -13,7 +13,7 @@ def main():
 
     # Generate 128 bit (16 byte) iv
     iv = Path("/secrets/iv")
-    key.write_bytes(os.urandom(16))
+    iv.write_bytes(os.urandom(16))
 
     return 0
 
