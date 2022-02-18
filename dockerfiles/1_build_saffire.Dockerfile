@@ -37,7 +37,7 @@ RUN echo "" > /secrets/iv
 RUN python3 /host_tools/keygen
 
 # Create EEPROM contents
-RUN echo "Bootloader Data" > /bootloader/eeprom.bin
+RUN echo "" > /bootloader/eeprom.bin
 
 # Compile bootloader
 WORKDIR /bl_build

@@ -15,6 +15,7 @@
 #include <stdbool.h>
 
 #include "driverlib/interrupt.h"
+#include "driverlib/eeprom.h"
 
 #include "flash.h"
 #include "uart.h"
@@ -55,6 +56,13 @@
 #define FRAME_OK 0x00
 #define FRAME_BAD 0x01
 
+// EEPROM Constants
+#define KEY_OFFSET 0x00
+#define IV_OFFSET 0x0F
+
+// Byte arrays for key and IV
+uint8_t key[16];
+uint8_t iv[16];
 
 /**
  * @brief Boot the firmware.
@@ -193,7 +201,7 @@ void handle_update(void)
     // Receive release message
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
 
-    if ((version != 0) && (version < *FIRMWARE_VERSION_PTR)) {
+    if ((version != 0) && (version < *(uint32_t *)FIRMWARE_VERSION_PTR)) {
         // Version is not acceptable
         uart_writeb(HOST_UART, FRAME_BAD);
         return;
@@ -275,8 +283,13 @@ void handle_configure(void)
  * @return int
  */
 int main(void) {
+    // Setting key and IV buffers
+    EEPROMRead(key, KEY_OFFSET, 16);
+    EEPROMRead(iv, IV_OFFSET, 16);
 
     uint8_t cmd = 0;
+    // Memory is always initialized as 1s, so on the first startup we need to set the current version to the oldest
+    uint32_t current_version = *(uint32_t *)FIRMWARE_VERSION_PTR;
     if (current_version == 0xFFFFFFFF){
         flash_write_word((uint32_t)OLDEST_VERSION, FIRMWARE_VERSION_PTR);
     }

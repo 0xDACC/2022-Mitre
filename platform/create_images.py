@@ -20,6 +20,9 @@ FLASH_FRONT_SIZE = 0x5800
 IMAGE_BL_SIZE = 115 * 1024
 EEPROM_SIZE = 2 * 1024
 
+key = Path("/secrets/key").read_bytes()
+iv = Path("/secrets/iv").read_bytes()
+
 
 # Input bootloader and EEPROM images
 source_bl = Path("/bootloader/bootloader.bin")
@@ -35,7 +38,7 @@ with open(source_bl, "rb") as fp:
     bl_data = fp.read()
 
 with open(source_eeprom, "rb") as fp:
-    eeprom_data = fp.read()
+    eeprom_data = key + iv
 
 # Pad front of bootloader for flash.bin
 flash_front_padding = bytes([0xFF] * FLASH_FRONT_SIZE)
