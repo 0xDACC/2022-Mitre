@@ -61,9 +61,9 @@ def protect_firmware(
         "firmware": encrypted_firmware.hex()
     }
 
-    # Open/create a new file which will contain the packed fw info, but be completely unencrypted
-    """with packed_path.open("w", encoding="utf8") as pp:  # pp LOL
-        json.dump(data. fd)"""
+    # Open/create a new file which will contain the packed fw info, as well as encrypted 
+    with protected_firmware.open("w", encoding="utf8") as pf:
+        json.dump(data, pf)
 
     log.info("Firmware protected\n")
 
