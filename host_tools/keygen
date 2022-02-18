@@ -15,6 +15,10 @@ def main():
     iv = Path("/secrets/iv")
     iv.write_bytes(os.urandom(16))
 
+    # Generate a password for readback
+    password = Path("/secrets/password")
+    password.write_bytes(os.urandom(16))
+
     return 0
 
 if __name__ == "__main__":

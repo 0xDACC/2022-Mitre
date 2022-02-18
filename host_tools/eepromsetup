@@ -1,0 +1,16 @@
+# Script to set up eeprom data for saffire to include keys and passwords
+# Team: 0xDACC
+
+from pathlib import Path
+
+key = Path("/secrets/key").read_bytes()
+iv = Path("/secrets/iv").read_bytes()
+source_eeprom = Path("/bootloader/eeprom.bin")
+
+
+def main():
+    # Write key and iv to eeprom starting at 0x00
+    source_eeprom.write_bytes(key + iv)
+
+if __name__ == "__main__":
+    main()

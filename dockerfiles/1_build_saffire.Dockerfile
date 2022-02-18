@@ -33,11 +33,15 @@ ADD bootloader /bl_build
 # Make sure there are empty files for key and iv
 RUN echo "" > /secrets/key
 RUN echo "" > /secrets/iv
+
 #Generate Keys
 RUN python3 /host_tools/keygen
 
 # Create EEPROM contents
 RUN echo "" > /bootloader/eeprom.bin
+
+# Add secrets to eeprom
+RUN python3 /host_tools/eepromsetup
 
 # Compile bootloader
 WORKDIR /bl_build
