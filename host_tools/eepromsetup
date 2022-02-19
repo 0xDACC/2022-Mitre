@@ -5,12 +5,13 @@ from pathlib import Path
 
 key = Path("/secrets/key").read_bytes()
 iv = Path("/secrets/iv").read_bytes()
+password = Path("/secrets/password").read_bytes()
 source_eeprom = Path("/bootloader/eeprom.bin")
 
 
 def main():
     # Write key and iv to eeprom starting at 0x00
-    source_eeprom.write_bytes(key + iv)
+    source_eeprom.write_bytes(key + iv + password)
 
 if __name__ == "__main__":
     main()

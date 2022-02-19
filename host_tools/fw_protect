@@ -38,24 +38,47 @@ def protect_firmware(
 
     key = Path("/secrets/key").read_bytes()
     iv = Path("/secrets/iv").read_bytes()
+    password = Path("/secrets/password").read_bytes()
 
     # because we don't know the size of the file, we need to pad it with some extra data
     padded_firmware = firmware_data
     for i in range(0, (len(padded_firmware)%16)):
-        padded_firmware.join(b'\x00')
+        padded_firmware += b'\x00'
+    # Add the password as a signature for the bootloader to check
+    padded_firmware += password
 
-    cipher = AES.new(key, AES.MODE_CBC, iv)  # creating new aes object. We can only use this object once.
+    cipher = AES.new(key, AES.MODE_CBC, iv)  # creating new aes object. We can only use this object once
 
     encrypted_firmware = cipher.encrypt(padded_firmware)  # encrypt() returns a byte string e.g. b'0123456789abcdef'
+
+    # Encrypt the version number as well. Only way I could think to
+    # stop the version from being tampered with without drastically changing the way the update works.
+    # We need the first 16 bits to be the version number
+    # so ill check if the number is higher than 255 and pad the front
+    # and it has to be 16 bits so its soft capped at 65535. 
+    if 255 < version < 65535:
+        padded_version = version.to_bytes(2, 'little')
+    elif version < 255:
+        padded_version = b'\x00' + version.to_bytes(1, 'little')
+    else:
+        padded_version = b'\xff\xff'
+    
+    # now we pad the back to make it 16 bytes
+    padded_version += b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'  # For loops? Who said anything about for loops?
+    # Add IV as signature
+    padded_version += iv
+
+    versioncip = AES.new(key, AES.MODE_CBC, iv)  # new aes object. We can only use this object once
+
+    encrypted_version = versioncip.encrypt(padded_version)
 
     log.info("Packaging the firmware...")
 
     # Construct the metadata
-    firmware_size = len(firmware_data)
 
     # Create firmware storage structure
     data = {
-        "firmware_size": firmware_size,
+        "firmware_size": encrypted_version.hex(),
         "version_num": version,
         "release_msg": release_message,
         "firmware": encrypted_firmware.hex()

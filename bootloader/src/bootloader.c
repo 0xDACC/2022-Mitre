@@ -20,13 +20,10 @@
 #include "flash.h"
 #include "uart.h"
 
-// this will run if EXAMPLE_AES is defined in the Makefile (see line 54)
-#ifdef EXAMPLE_AES
 #include "aes.h"
-#endif
 
 
-// Storage layout
+// Flash storage layout
 
 /*
  * Firmware:
@@ -56,13 +53,26 @@
 #define FRAME_OK 0x00
 #define FRAME_BAD 0x01
 
-// EEPROM Constants
-#define KEY_OFFSET 0x00
-#define IV_OFFSET 0x0F
+// EEPROM storage layout
+/*
+ * AES information:
+ *      Key:     0x00000000 : 0x0000000F (16B) 
+ *      IV:      0x00000010 : 0x0000001F (16B)
+ * Readback password:
+ *      Pass:    0x00000020 : 0x0000002f (16B)
+ * Padding:      
+ *               0x0000002f : 0x00000000 (~2k)
+ */
+
+#define EEPROM_START_PTR        ((uint32_t)0x00000000)
+#define KEY_OFFSET_PTR          ((uint32_t)EEPROM_START_PTR + 0)
+#define IV_OFFSET_PTR           ((uint32_t)EEPROM_START_PTR + 16)
+#define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
 // Byte arrays for key and IV
 uint8_t key[16];
 uint8_t iv[16];
+uint8_t password[16];
 
 /**
  * @brief Boot the firmware.
@@ -180,6 +190,7 @@ void load_data(uint32_t interface, uint32_t dst, uint32_t size)
 void handle_update(void)
 {
     // metadata
+    uint8_t vbuff[32];  // 8 bits because we're going to read 1 byte at a time
     uint32_t version = 0;
     uint32_t size = 0;
     uint32_t rel_msg_size = 0;
@@ -188,9 +199,8 @@ void handle_update(void)
     // Acknowledge the host
     uart_writeb(HOST_UART, 'U');
 
-    // Receive version
-    version = ((uint32_t)uart_readb(HOST_UART)) << 8;
-    version |= (uint32_t)uart_readb(HOST_UART);
+    // Receive version, store in buffer for decryption
+    uart_read(HOST_UART, vbuff, 32);
 
     // Receive size
     size = ((uint32_t)uart_readb(HOST_UART)) << 24;
@@ -198,13 +208,52 @@ void handle_update(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
 
+    uint8_t firmbuff[size];  // Since we don't know the size until now we have to make the buffer now
+
+    // Decrypt the version number, and put it in a 32 bit unsigned int
+    struct AES_ctx version_ctx;
+    AES_init_ctx_iv(&version_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&version_ctx, vbuff, 32);
+
+    version = vbuff[0] << 8;  //since the first byte in the buffer represents the first half of the 16 bit version number
+    version |= vbuff[1];
+
     // Receive release message
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
+
+    /* Now that we have decrypted the 32 byte (16 bytes of version+pad, and 16 bytes of password)
+    * Lets check if its correct */
+   for(int i = 0; i<16; i++){
+       if (password[i] != vbuff[16+i]){
+           // Version Number is not signed with the correct password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
 
     if ((version != 0) && (version < *(uint32_t *)FIRMWARE_VERSION_PTR)) {
         // Version is not acceptable
         uart_writeb(HOST_UART, FRAME_BAD);
         return;
+    }
+
+    // Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
+
+    // Now we get and decrypt the firmware and check that its signed
+    uart_read(HOST_UART, firmbuff, size);
+    // Decrypt
+    struct AES_ctx firmware_ctx;  // Note: This structer may not be needed. More testing needed (could save memory)
+    AES_init_ctx_iv(&firmware_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&firmware_ctx, firmbuff, size);
+
+    // Check signature
+    for(int i = 0; i < 16; i++){
+        if(password[i] != firmbuff[((size-1)-16)+i]){
+            // Firmware is not signed with the correct password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
     }
 
     // Clear firmware metadata
@@ -241,12 +290,6 @@ void handle_update(void)
         rem_bytes += 4 - (rem_bytes % 4); // Account for partial word
     }
     flash_write((uint32_t *)rel_msg_read_ptr, rel_msg_write_ptr, rem_bytes >> 2);
-
-    // Acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
-    
-    // Retrieve firmware
-    load_data(HOST_UART, FIRMWARE_STORAGE_PTR, size);
 }
 
 
@@ -284,8 +327,9 @@ void handle_configure(void)
  */
 int main(void) {
     // Setting key and IV buffers
-    EEPROMRead(key, KEY_OFFSET, 16);
-    EEPROMRead(iv, IV_OFFSET, 16);
+    EEPROMRead(key, (uint32_t)KEY_OFFSET_PTR, 16);
+    EEPROMRead(iv, (uint32_t)IV_OFFSET_PTR, 16);
+    EEPROMRead(password, (uint32_t)PASSWORD_OFFSET_PTR, 16);
 
     uint8_t cmd = 0;
     // Memory is always initialized as 1s, so on the first startup we need to set the current version to the oldest

@@ -33,11 +33,14 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
 
     key = Path("/secrets/key").read_bytes()
     iv = Path("/secrets/iv").read_bytes()
+    password = Path("/secrets/password").read_bytes()
 
     # Pad extra data on the end of the file to make sure its compatable with aes block sizes (128 bits or 16 bytes)
     padded_cfg = file_data
     for i in range(0, (len(file_data)%16)):
-        padded_cfg.join(b'\x00')
+        padded_cfg += b'\x00'
+    # Add password as signature for bootloader to check
+    padded_cfg += password
     
     cipher = AES.new(key, AES.MODE_CBC, iv)  # creating new aes object. We can only use this object once.
 
