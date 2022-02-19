@@ -219,6 +219,14 @@ void handle_update(void)
     version |= vbuff[1];
 
     // Receive release message
+    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     * !!!! ATTENTION!!!!!!!!!! WARNING !!!!!!!!!!
+     * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     * The Following line of code is vulnerable to
+     * a buffer overrun exploit!!
+     * We need to impliment a method to force the 
+     * release message to be LESS THAN 1K!!!!!!!!!
+     */
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
 
     /* Now that we have decrypted the 32 byte (16 bytes of version+pad, and 16 bytes of password)
