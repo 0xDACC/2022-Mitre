@@ -70,9 +70,14 @@
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
 // Byte arrays for key and IV
-uint32_t key[16];
-uint32_t iv[16];
-uint32_t password[16];
+// We need the 32 bit arrys for reading from the eeprom, and the 8 bit ones for actual use
+uint32_t key32[16];
+uint32_t iv32[16];
+uint32_t password32[16];
+
+uint8_t key[16];
+uint8_t iv[16];
+uint8_t password[16];
 
 /**
  * @brief Boot the firmware.
@@ -334,10 +339,16 @@ void handle_configure(void)
  * @return int
  */
 int main(void) {
-    // Setting key and IV buffers
-    EEPROMRead(key, (uint32_t)KEY_OFFSET_PTR, 16);
-    EEPROMRead(iv, (uint32_t)IV_OFFSET_PTR, 16);
-    EEPROMRead(password, (uint32_t)PASSWORD_OFFSET_PTR, 16);
+    // Reading key iv and password from eeprom. (needs a uint32_t pointer. )
+    EEPROMRead(key32, (uint32_t)KEY_OFFSET_PTR, 16);
+    EEPROMRead(iv32, (uint32_t)IV_OFFSET_PTR, 16);
+    EEPROMRead(password32, (uint32_t)PASSWORD_OFFSET_PTR, 16);
+
+    for(int i = 0; i <16, i++){
+        key[i] += key32[i];
+        iv[i] += iv32[i];
+        password[i] += password32[i];
+    }
 
     uint8_t cmd = 0;
     // Memory is always initialized as 1s, so on the first startup we need to set the current version to the oldest
