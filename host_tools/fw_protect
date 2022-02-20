@@ -40,14 +40,12 @@ def protect_firmware(
     iv = Path("/secrets/iv").read_bytes()
     password = Path("/secrets/password").read_bytes()
 
-    # because we don't know the size of the file, we need to pad it with some extra data
+    # because we don't know the size of the file, we need to 
+    # pad it until it divides by 16
     padded_firmware = firmware_data
-    for i in range(0, (len(padded_firmware)%16)):
-        padded_firmware += b'\x00'
+    padded_firmware += (b'\x00' * (len(padded_firmware)%16))
     # Add the password as a signature for the bootloader to check
     padded_firmware += password
-    print(password)
-    print(len(padded_firmware))
 
     cipher = AES.new(key, AES.MODE_CBC, iv)  # creating new aes object. We can only use this object once
 

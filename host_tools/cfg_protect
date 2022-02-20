@@ -37,8 +37,7 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
 
     # Pad extra data on the end of the file to make sure its compatable with aes block sizes (128 bits or 16 bytes)
     padded_cfg = file_data
-    for i in range(0, (len(file_data)%16)):
-        padded_cfg += b'\x00'
+    padded_cfg += (b'\x00' * (len(padded_cfg)%16))
     # Add password as signature for bootloader to check
     padded_cfg += password
     
