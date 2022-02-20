@@ -344,7 +344,7 @@ int main(void) {
     EEPROMRead(iv32, (uint32_t)IV_OFFSET_PTR, 16);
     EEPROMRead(password32, (uint32_t)PASSWORD_OFFSET_PTR, 16);
 
-    for(int i = 0; i <16, i++){
+    for(int i = 0; i <16; i++){
         key[i] += key32[i];
         iv[i] += iv32[i];
         password[i] += password32[i];
