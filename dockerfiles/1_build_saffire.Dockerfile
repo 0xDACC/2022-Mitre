@@ -15,9 +15,8 @@ FROM ubuntu:focal
 # NOTE: do this first so Docker can used cached containers to skip reinstalling everything
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y python3 \
-    binutils-arm-none-eabi gcc-arm-none-eabi make
-
-RUN apt-get install -y python3-pip
+    binutils-arm-none-eabi gcc-arm-none-eabi make \
+    python3-pip
 
 # Install aes encryption
 RUN python3 -m pip install PyCryptodome
