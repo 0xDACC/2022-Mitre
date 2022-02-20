@@ -46,6 +46,8 @@ def protect_firmware(
         padded_firmware += b'\x00'
     # Add the password as a signature for the bootloader to check
     padded_firmware += password
+    print(password)
+    print(len(padded_firmware))
 
     cipher = AES.new(key, AES.MODE_CBC, iv)  # creating new aes object. We can only use this object once
 
