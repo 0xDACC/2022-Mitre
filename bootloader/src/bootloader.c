@@ -70,9 +70,9 @@
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
 // Byte arrays for key and IV
-uint8_t key[16];
-uint8_t iv[16];
-uint8_t password[16];
+uint32_t key[16];
+uint32_t iv[16];
+uint32_t password[16];
 
 /**
  * @brief Boot the firmware.
