@@ -48,6 +48,6 @@ RUN python3 /host_tools/eepromsetup
 WORKDIR /bl_build
 
 ARG OLDEST_VERSION
-RUN make OLDEST_VERSION=${OLDEST_VERSION}
+RUN make OLDEST_VERSION=${OLDEST_VERSION} | tee /host_tools/makelog.log
 RUN mv /bl_build/gcc/bootloader.bin /bootloader/bootloader.bin
 RUN mv /bl_build/gcc/bootloader.axf /bootloader/bootloader.elf
