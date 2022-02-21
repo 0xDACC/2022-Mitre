@@ -30,7 +30,7 @@ def update_firmware(socket_number: int, firmware_file: Path):
     log.info("Reading firmware file...")
     with firmware_file.open("rb") as fw:
         data = json.load(fw)
-        version_num: bytes.fromhex(data["version_num"])
+        version_num = bytes.fromhex(data["version_num"])
         release_msg: str = data["release_msg"]
         firmware = bytes.fromhex(data["firmware"])
         firmware_size = len(firmware)
