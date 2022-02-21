@@ -40,6 +40,12 @@ all: ${COMPILER}
 all: ${COMPILER}/bootloader.axf
 
 
+################ start crypto example ################
+# example AES rules to build in tiny-AES-c: https://github.com/kokke/tiny-AES-c
+# make sure submodule has been pulled (run `git submodule update --init`)
+# uncomment next line to activate
+EXAMPLE_AES=foo
+ifdef EXAMPLE_AES
 # path to crypto library
 CRYPTOPATH=${ROOT}/lib/tiny-AES-c
 
@@ -57,6 +63,8 @@ CFLAGS+=-DEXAMPLE_AES
 
 # add rule to build crypto library
 ${COMPILER}/bootloader.axf: ${COMPILER}/aes.o
+endif
+################ end crypto example ################
 
 
 
