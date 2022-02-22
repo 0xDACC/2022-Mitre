@@ -71,9 +71,9 @@
 
 // Byte arrays for key and IV
 // We need the 32 bit arrys for reading from the eeprom, and the 8 bit ones for actual use
-uint32_t key32[16];
-uint32_t iv32[16];
-uint32_t password32[16];
+uint32_t key32[4];
+uint32_t iv32[4];
+uint32_t password32[4];
 
 uint8_t key[16];
 uint8_t iv[16];
@@ -325,13 +325,11 @@ void handle_configure(void)
 
     flash_erase_page(CONFIGURATION_METADATA_PTR);
     flash_write_word(size, CONFIGURATION_SIZE_PTR);
-
     uart_writeb(HOST_UART, FRAME_OK);
     
     // Retrieve configuration
     load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size);
 }
-
 
 /**
  * @brief Host interface polling loop to receive configure, update, readback,
@@ -345,11 +343,69 @@ int main(void) {
     EEPROMRead(iv32, (uint32_t)IV_OFFSET_PTR, 16);
     EEPROMRead(password32, (uint32_t)PASSWORD_OFFSET_PTR, 16);
 
-    for(int i = 0; i <16; i++){
-        key[i] += key32[i];
-        iv[i] += iv32[i];
-        password[i] += password32[i];
-    }
+    // Convert those 4 bytes of 32 bits into 16 bytes of 8 bits
+
+    // There has to be an easier way to do this
+    key[0] = key32[0];
+    key[1] = key32[0] >> 8;
+    key[2] = key32[0] >> 16;
+    key[3] = key32[0] >> 24;
+
+    key[4] = key32[1];
+    key[5] = key32[1] >> 8;
+    key[6] = key32[1] >> 16;
+    key[7] = key32[1] >> 24;
+
+    key[8] = key32[2];
+    key[9] = key32[2] >> 8;
+    key[10] = key32[2] >> 16;
+    key[11] = key32[2] >> 24;
+
+    key[12] = key32[3];
+    key[13] = key32[3] >> 8;
+    key[14] = key32[3] >> 16;
+    key[15] = key32[3] >> 24;
+
+    iv[0] = iv32[0];
+    iv[1] = iv32[0] >> 8;
+    iv[2] = iv32[0] >> 16;
+    iv[3] = iv32[0] >> 24;
+
+    iv[4] = iv32[1];
+    iv[5] = iv32[1] >> 8;
+    iv[6] = iv32[1] >> 16;
+    iv[7] = iv32[1] >> 24;
+
+    iv[8] = iv32[2];
+    iv[9] = iv32[2] >> 8;
+    iv[10] = iv32[2] >> 16;
+    iv[11] = iv32[2] >> 24;
+
+    iv[12] = iv32[3];
+    iv[13] = iv32[3] >> 8;
+    iv[14] = iv32[3] >> 16;
+    iv[15] = iv32[3] >> 24;
+
+    password[0] = password32[0];
+    password[1] = password32[0] >> 8;
+    password[2] = password32[0] >> 16;
+    password[3] = password32[0] >> 24;
+
+    password[4] = password32[1];
+    password[5] = password32[1] >> 8;
+    password[6] = password32[1] >> 16;
+    password[7] = password32[1] >> 24;
+
+    password[8] = password32[2];
+    password[9] = password32[2] >> 8;
+    password[10] = password32[2] >> 16;
+    password[11] = password32[2] >> 24;
+
+    password[12] = password32[3];
+    password[13] = password32[3] >> 8;
+    password[14] = password32[3] >> 16;
+    password[15] = password32[3] >> 24;
+
 
     uint8_t cmd = 0;
     // Memory is always initialized as 1s, so on the first startup we need to set the current version to the oldest
