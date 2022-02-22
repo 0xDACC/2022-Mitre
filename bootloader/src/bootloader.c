@@ -256,6 +256,7 @@ void handle_update(void)
 
     // Now we get and decrypt the firmware and check that its signed
     uart_read(HOST_UART, firmbuff, size);
+
     // Decrypt
     struct AES_ctx firmware_ctx;  // Note: This structer may not be needed. More testing needed (could save memory)
     AES_init_ctx_iv(&firmware_ctx, key, iv);
@@ -269,6 +270,9 @@ void handle_update(void)
             return;
         }
     }
+
+    // Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
 
     // Clear firmware metadata
     flash_erase_page(FIRMWARE_METADATA_PTR);
@@ -304,9 +308,6 @@ void handle_update(void)
         rem_bytes += 4 - (rem_bytes % 4); // Account for partial word
     }
     flash_write((uint32_t *)rel_msg_read_ptr, rel_msg_write_ptr, rem_bytes >> 2);
-
-    // Tell host all went well
-    uart_writeb(HOST_UART, FRAME_OK);
 }
 
 
