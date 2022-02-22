@@ -206,6 +206,7 @@ void handle_update(void)
 
     // Receive version, store in buffer for decryption
     uart_read(HOST_UART, vbuff, 32);
+    // Acknowledge
     uart_writeb(HOST_UART, FRAME_OK);
 
     // Receive size
@@ -256,6 +257,9 @@ void handle_update(void)
 
     // Now we get and decrypt the firmware and check that its signed
     uart_read(HOST_UART, firmbuff, size);
+    
+    // Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
 
     // Decrypt
     struct AES_ctx firmware_ctx;  // Note: This structer may not be needed. More testing needed (could save memory)
