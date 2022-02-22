@@ -206,6 +206,7 @@ void handle_update(void)
 
     // Receive version, store in buffer for decryption
     uart_read(HOST_UART, vbuff, 32);
+    uart_writeb(HOST_UART, FRAME_OK);
 
     // Receive size
     size = ((uint32_t)uart_readb(HOST_UART)) << 24;
