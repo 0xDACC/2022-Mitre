@@ -215,14 +215,6 @@ void handle_update(void)
 
     uint8_t firmbuff[size];  // Since we don't know the size until now we have to make the buffer now
 
-    // Decrypt the version number, and put it in a 32 bit unsigned int
-    struct AES_ctx version_ctx;
-    AES_init_ctx_iv(&version_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&version_ctx, vbuff, 32);
-
-    version = vbuff[0] << 8;  //since the first byte in the buffer represents the first half of the 16 bit version number
-    version |= vbuff[1];
-
     // Receive release message
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      * !!!! ATTENTION!!!!!!!!!! WARNING !!!!!!!!!!
@@ -233,6 +225,14 @@ void handle_update(void)
      * release message to be LESS THAN 1K!!!!!!!!!
      */
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
+
+    // Decrypt the version number, and put it in a 32 bit unsigned int
+    struct AES_ctx version_ctx;
+    AES_init_ctx_iv(&version_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&version_ctx, vbuff, 32);
+
+    version = vbuff[0] << 8;  //since the first byte in the buffer represents the first half of the 16 bit version number
+    version |= vbuff[1];
 
     /* Now that we have decrypted the 32 byte (16 bytes of version+pad, and 16 bytes of password)
     * Lets check if its correct */
