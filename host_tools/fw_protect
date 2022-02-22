@@ -55,7 +55,7 @@ def protect_firmware(
     # stop the version from being tampered with without drastically changing the way the update works.
     # We need the first 16 bits to be the version number
     # so ill check if the number is higher than 255 and pad the front
-    # and it has to be 16 bits so its soft capped at 65535. 
+    # and it has to be 16 bits so its capped at 65535. 
     if 255 < version < 65535:
         padded_version = version.to_bytes(2, 'little')
     elif version < 255:
@@ -78,8 +78,8 @@ def protect_firmware(
 
     # Create firmware storage structure
     data = {
-        "firmware_size": encrypted_version.hex(),
-        "version_num": version,
+        "firmware_size": len(encrypted_firmware),
+        "version_num": encrypted_version.hex(),
         "release_msg": release_message,
         "firmware": encrypted_firmware.hex()
     }
