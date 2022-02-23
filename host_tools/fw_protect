@@ -17,6 +17,7 @@ import json
 import logging
 from Crypto.Cipher import AES
 from pathlib import Path
+import os
 
 from util import print_banner, FIRMWARE_ROOT, LOG_FORMAT
 
@@ -64,7 +65,7 @@ def protect_firmware(
         padded_version = b'\xff\xff'
     
     # now we pad the back to make it 16 bytes
-    padded_version += b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'  # For loops? Who said anything about for loops?
+    padded_version += os.urandom(14) # Previously this was just 14 empty bytes, however that makes brute force much easier
     # Add IV as signature
     padded_version += password
 
