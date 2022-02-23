@@ -56,6 +56,7 @@ def send_packets(sock: socket.socket, data: bytes):
 
     for num, packet in enumerate(packets):
         log.debug(f"Sending Packet {num} ({len(packet)} bytes)...")
+        print(f"Sending Packet {num} ({len(packet)} bytes)...")
         sock.sendall(packet)
         resp = sock.recv(1)  # Wait for an OK from the bootloader
 
