@@ -227,7 +227,6 @@ void handle_update(void)
      * release message to be LESS THAN 1K!!!!!!!!!
      */
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
-    load_data();
     // Decrypt the version number, and put it in a 32 bit unsigned int
     struct AES_ctx version_ctx;
     AES_init_ctx_iv(&version_ctx, key, iv);
