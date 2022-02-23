@@ -259,7 +259,7 @@ void handle_update(void)
     uart_read(HOST_UART, firmbuff, (uint32_t)size);
 
     // Acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
+    // uart_writeb(HOST_UART, FRAME_OK);
 
     // Decrypt
     struct AES_ctx firmware_ctx;  // Note: This structer may not be needed. More testing needed (could save memory)
