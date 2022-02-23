@@ -262,9 +262,16 @@ void handle_update(void)
         uint8_t firm1024[1024];
         uint8_t firmrest[rest];
         uart_read(HOST_UART, firm1024, 1024);
-        uart_writeb(HOST_UART, FRAME_OK);
+        //uart_writeb(HOST_UART, FRAME_OK);
         uart_read(HOST_UART, firmrest, rest);
-        uart_writeb(HOST_UART, FRAME_OK);
+        //uart_writeb(HOST_UART, FRAME_OK);
+
+        for(int i = 0; i < 1024; i++){
+            firmbuff[i] = firm1024[i];
+        }
+        for(int j = rest; j < size; j++){
+            firmbuff[j] = firmrest[j - rest];
+        }
     }
 
     // Acknowledge
