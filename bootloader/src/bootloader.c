@@ -197,7 +197,7 @@ void handle_update(void)
     // metadata
     uint8_t vbuff[32];  // 8 bits because we're going to read 1 byte at a time
     uint32_t version = 0;
-    uint32_t size = 0;
+    uint32_t size = 0x00000000;
     uint32_t rel_msg_size = 0;
     uint8_t rel_msg[1025]; // 1024 + terminator
 
@@ -227,7 +227,7 @@ void handle_update(void)
      * release message to be LESS THAN 1K!!!!!!!!!
      */
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
-
+    load_data();
     // Decrypt the version number, and put it in a 32 bit unsigned int
     struct AES_ctx version_ctx;
     AES_init_ctx_iv(&version_ctx, key, iv);
@@ -256,7 +256,9 @@ void handle_update(void)
     uart_writeb(HOST_UART, FRAME_OK);
 
     // Now we get and decrypt the firmware and check that its signed
-    uart_read(HOST_UART, firmbuff, (uint32_t)size);
+    for(uint32_t i = 0; i < size; i++){
+        firmbuff[i] = (uint8_t)uart_readb(HOST_UART);
+    }
 
     // Acknowledge
     uart_writeb(HOST_UART, FRAME_OK);
