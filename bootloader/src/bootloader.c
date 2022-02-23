@@ -255,8 +255,16 @@ void handle_update(void)
     uart_writeb(HOST_UART, FRAME_OK);
 
     // Now we get and decrypt the firmware and check that its signed
-    for(uint32_t i = 0; i < size; i++){
-        firmbuff[i] = (uint8_t)uart_readb(HOST_UART);
+    if(size >= 1024){
+        uart_read(HOST_UART, firmbuff, size);
+    } else {
+        uint32_t rest = size - 1024;
+        uint8_t firm1024[1024];
+        uint8_t firmrest[rest];
+        uart_read(HOST_UART, firm1024, 1024);
+        uart_writeb(HOST_UART, FRAME_OK);
+        uart_read(HOST_UART, firmrest, rest);
+        uart_writeb(HOST_UART, FRAME_OK);
     }
 
     // Acknowledge
