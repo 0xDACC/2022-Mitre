@@ -254,23 +254,31 @@ void handle_update(void)
     // Acknowledge
     uart_writeb(HOST_UART, FRAME_OK);
 
-    // Now we get and decrypt the firmware and check that its signed
+    //So for some reason uart read stops after 1024. No clue why.
+    // This is complicated so ill add plent of comments..
+
+    // To begin if the size is only 1k, then we dont need any extra logic
     if(size <= 1024){
         uart_read(HOST_UART, firmbuff, size);
     } else {
+        // But if we have more than 1 k we need to cover for that. I may need to find a new way to do this.
+        // So if its longer than 1k we make a buffer for each 1k that we will need. Maybe i can use pointers creatively here
         uint32_t rest = size - 1024;
         uint8_t firm1024[1024];
         uint8_t firmrest[rest];
+        // and for each 1024 we read we need to acknowledge the host tools.
         uart_read(HOST_UART, firm1024, 1024);
         uart_writeb(HOST_UART, FRAME_OK);
         uart_read(HOST_UART, firmrest, rest);
         uart_writeb(HOST_UART, FRAME_OK);
 
+        // so then we take all the buffers we made and combine them into the one buffer for decryption
         for(int i = 0; i < 1024; i++){
             firmbuff[i] = firm1024[i];
         }
-        for(int j = rest; j < size; j++){
-            firmbuff[j] = firmrest[j - rest];
+        // and again we need to do this for each 1024 bytes.
+        for(int j = 1024; j < size; j++){
+            firmbuff[j] = firmrest[j - 1024];
         }
     }
 
