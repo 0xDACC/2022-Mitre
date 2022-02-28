@@ -309,6 +309,9 @@ void handle_update(void)
         return;
     }
 
+    //Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
+
     load_firmware(HOST_UART, size);
 
     // Clear firmware metadata
