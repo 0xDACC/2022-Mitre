@@ -66,7 +66,7 @@ def protect_firmware(
     
     # now we pad the back to make it 16 bytes
     padded_version += os.urandom(14) # Previously this was just 14 empty bytes, however that makes brute force much easier
-    # Add IV as signature
+    # Add password as signature
     padded_version += password
 
     versioncip = AES.new(key, AES.MODE_CBC, iv)  # new aes object. We can only use this object once
