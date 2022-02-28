@@ -219,9 +219,6 @@ void load_firmware(uint32_t interface, uint32_t size){
         }
         pos += FLASH_PAGE_SIZE;
         remaining -= frame_size;
-
-        // Acknowledge host
-        uart_writeb(HOST_UART, FRAME_OK);
         j = 0;
     }
 
@@ -321,7 +318,7 @@ void handle_update(void)
 
     //Acknowledge
     uart_writeb(HOST_UART, FRAME_OK);
-    
+
     // Clear firmware metadata
     flash_erase_page(FIRMWARE_METADATA_PTR);
 
