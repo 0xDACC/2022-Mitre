@@ -240,6 +240,9 @@ void load_firmware(uint32_t interface, uint32_t size){
         }
     }
 
+    // Acknowledge the host
+    uart_writeb(HOST_UART, FRAME_OK);
+
     remaining = size;
 
     while(remaining > 0) {
