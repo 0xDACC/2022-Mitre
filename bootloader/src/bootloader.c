@@ -323,9 +323,6 @@ void handle_update(void)
 
     load_firmware(HOST_UART, size);
 
-    //Acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
-
     // Clear firmware metadata
     flash_erase_page(FIRMWARE_METADATA_PTR);
 
