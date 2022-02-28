@@ -213,7 +213,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         for(j = 0; j < frame_size; j++){
             firmware_buffer[j + pos] = page_buffer[j];
         }
-        pos += FLASH_PAGE_SIZE;
+        pos += frame_size;
         remaining -= frame_size;
 
         // Acknowledge host
