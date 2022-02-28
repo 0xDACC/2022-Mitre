@@ -225,11 +225,9 @@ void load_firmware(uint32_t interface, uint32_t size){
     AES_init_ctx_iv(&firmware_ctx, key, iv);
     AES_CBC_decrypt_buffer(&firmware_ctx, firmware_buffer, size);
 
-    uint8_t * passwordPtr = &firmware_buffer[(size-1)-16];
-
     // Check signature
     for(i = 0; i < 16; i++){
-        if(password[i] != *((uint8_t *)passwordPtr+i)){
+        if(password[i] != firmware_buffer[(size-1)-16+i]){
             // Firmware is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
