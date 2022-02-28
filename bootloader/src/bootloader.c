@@ -222,8 +222,8 @@ void load_firmware(uint32_t interface, uint32_t size){
         j = 0;
 
         // Acknowledge the host
-        uart_writeb(HOST_UART, 'U');
-        
+        uart_writeb(HOST_UART, FRAME_OK);
+
     }
 
     // Decrypt
