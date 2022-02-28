@@ -194,7 +194,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     int j;
     uint32_t frame_size;
     uint8_t page_buffer[FLASH_PAGE_SIZE];
-    uint32_t dst = FIRMWARE_SIZE_PTR;
+    uint32_t dst = FIRMWARE_STORAGE_PTR;
     uint8_t firmware_buffer[size];
     uint8_t pos = 0;
     uint32_t remaining = size;
@@ -214,15 +214,19 @@ void load_firmware(uint32_t interface, uint32_t size){
             firmware_buffer[j + pos] = page_buffer[j];
         }
         pos += FLASH_PAGE_SIZE;
+        remaining -= frame_size;
+
+        // Acknowledge host
+        uart_writeb(HOST_UART, FRAME_OK);
     }
 
     // Decrypt
-    struct AES_ctx firmware_ctx;  // Note: This structer may not be needed. More testing needed (could save memory)
+    struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
     AES_CBC_decrypt_buffer(&firmware_ctx, firmware_buffer, size);
 
     // Check signature
-    for(int i = 0; i < 16; i++){
+    for(i = 0; i < 16; i++){
         if(password[i] != firmware_buffer[((size-1)-16)+i]){
             // Firmware is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
@@ -230,18 +234,19 @@ void load_firmware(uint32_t interface, uint32_t size){
         }
     }
 
-    // Acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
+    remaining = size;
 
-    // clear flash page
-    flash_erase_page(dst);
-    // write flash page
-    flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
-    // next page and decrease size
-    dst += FLASH_PAGE_SIZE;
-    remaining -= frame_size;
-    // send frame ok
-    uart_writeb(HOST_UART, FRAME_OK);
+    while(remaining > 0) {
+        // calculate frame size
+        frame_size = size > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : size;
+        // clear flash page
+        flash_erase_page(dst);
+        // write flash page
+        flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
+        // next page and decrease size
+        dst += FLASH_PAGE_SIZE;
+        remaining -= frame_size;
+    }
 }
 
 /**
