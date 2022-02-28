@@ -220,6 +220,10 @@ void load_firmware(uint32_t interface, uint32_t size){
         pos += (uint32_t)FLASH_PAGE_SIZE;
         remaining -= frame_size;
         j = 0;
+
+        // Acknowledge the host
+        uart_writeb(HOST_UART, 'U');
+        
     }
 
     // Decrypt
