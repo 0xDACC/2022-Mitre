@@ -189,6 +189,61 @@ void load_data(uint32_t interface, uint32_t dst, uint32_t size)
     }
 }
 
+void load_firmware(uint32_t interface, uint32_t size){
+    int i;
+    int j;
+    uint32_t frame_size;
+    uint8_t page_buffer[FLASH_PAGE_SIZE];
+    uint32_t dst = FIRMWARE_SIZE_PTR;
+    uint8_t firmware_buffer[size];
+    uint8_t pos = 0;
+    uint32_t remaining = size;
+
+    // Fill the firmware buffer
+    while(remaining > 0) {
+        // calculate frame size
+        frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
+        // read frame into buffer
+        uart_read(HOST_UART, page_buffer, frame_size);
+        // pad buffer if frame is smaller than the page
+        for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
+            page_buffer[i] = 0xFF;
+        }
+        // add the page buffer to the firmware buffer
+        for(j = 0; j < frame_size; j++){
+            firmware_buffer[j + pos] = page_buffer[j];
+        }
+        pos += FLASH_PAGE_SIZE;
+    }
+
+    // Decrypt
+    struct AES_ctx firmware_ctx;  // Note: This structer may not be needed. More testing needed (could save memory)
+    AES_init_ctx_iv(&firmware_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&firmware_ctx, firmware_buffer, size);
+
+    // Check signature
+    for(int i = 0; i < 16; i++){
+        if(password[i] != firmware_buffer[((size-1)-16)+i]){
+            // Firmware is not signed with the correct password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
+    // Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
+
+    // clear flash page
+    flash_erase_page(dst);
+    // write flash page
+    flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
+    // next page and decrease size
+    dst += FLASH_PAGE_SIZE;
+    remaining -= frame_size;
+    // send frame ok
+    uart_writeb(HOST_UART, FRAME_OK);
+}
+
 /**
  * @brief Update the firmware.
  */
@@ -214,8 +269,6 @@ void handle_update(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 16;
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
-
-    uint8_t firmbuff[size];  // Since we don't know the size until now we have to make the buffer now
 
     // Receive release message
     /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -251,53 +304,7 @@ void handle_update(void)
         return;
     }
 
-    // Acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
-
-    //So for some reason uart read stops after 1024. No clue why.
-    // This is complicated so ill add plent of comments..
-
-    // To begin if the size is only 1k, then we dont need any extra logic
-    if(size <= 1024){
-        uart_read(HOST_UART, firmbuff, size);
-    } else {
-        // But if we have more than 1 k we need to cover for that. I may need to find a new way to do this.
-        // So if its longer than 1k we make a buffer for each 1k that we will need. Maybe i can use pointers creatively here
-        uint32_t rest = size - 1024;
-        uint8_t firm1024[1024];
-        uint8_t firmrest[rest];
-        // and for each 1024 we read we need to acknowledge the host tools.
-        uart_read(HOST_UART, firm1024, 1024);
-        uart_writeb(HOST_UART, FRAME_OK);
-        uart_read(HOST_UART, firmrest, rest);
-        uart_writeb(HOST_UART, FRAME_OK);
-
-        // so then we take all the buffers we made and combine them into the one buffer for decryption
-        for(int i = 0; i < 1024; i++){
-            firmbuff[i] = firm1024[i];
-        }
-        // and again we need to do this for each 1024 bytes.
-        for(int j = 1024; j < size; j++){
-            firmbuff[j] = firmrest[j - 1024];
-        }
-    }
-
-    // Decrypt
-    struct AES_ctx firmware_ctx;  // Note: This structer may not be needed. More testing needed (could save memory)
-    AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, firmbuff, size);
-
-    // Check signature
-    for(int i = 0; i < 16; i++){
-        if(password[i] != firmbuff[((size-1)-16)+i]){
-            // Firmware is not signed with the correct password
-            uart_writeb(HOST_UART, FRAME_BAD);
-            return;
-        }
-    }
-
-    // Acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
+    load_firmware(HOST_UART, size);
 
     // Clear firmware metadata
     flash_erase_page(FIRMWARE_METADATA_PTR);
