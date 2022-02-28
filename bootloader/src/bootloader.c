@@ -249,6 +249,9 @@ void load_firmware(uint32_t interface, uint32_t size){
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
     }
+
+    // Acknowledge the host
+    uart_writeb(HOST_UART, 'U');
 }
 
 /**
