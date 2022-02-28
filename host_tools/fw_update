@@ -60,7 +60,7 @@ def update_firmware(socket_number: int, firmware_file: Path):
         )
         sock.send(payload)
         response = sock.recv(1)
-        if response != RESP_OK:
+        if response == b'\x01':
             exit(f"ERROR: Bad Version. Bootloader responded with {repr(response)}")
 
         # Send packets
