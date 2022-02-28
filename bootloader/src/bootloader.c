@@ -196,7 +196,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     uint8_t page_buffer[FLASH_PAGE_SIZE];
     uint32_t dst = FIRMWARE_STORAGE_PTR;
     uint8_t firmware_buffer[size];
-    uint8_t pos = 0;
+    uint32_t pos = 0;
     uint32_t remaining = size;
 
     // Fill the firmware buffer
@@ -217,7 +217,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         for(j = 0; j < frame_size; j++){
             firmware_buffer[j + pos] = page_buffer[j];
         }
-        pos += (uint32_t)FLASH_PAGE_SIZE;
+        pos += 1024;
         remaining -= frame_size;
         j = 0;
 
