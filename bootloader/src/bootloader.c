@@ -217,7 +217,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         for(j = 0; j < frame_size; j++){
             firmware_buffer[j + pos] = page_buffer[j];
         }
-        pos += 1024;
+        pos += FLASH_PAGE_SIZE;
         remaining -= frame_size;
         j = 0;
 
@@ -247,7 +247,7 @@ void load_firmware(uint32_t interface, uint32_t size){
 
     while(remaining > 0) {
         // calculate frame size
-        frame_size = size > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : size;
+        frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
         // clear flash page
         flash_erase_page(dst);
         // write flash page
@@ -284,15 +284,6 @@ void handle_update(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
 
-    // Receive release message
-    /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     * !!!! ATTENTION!!!!!!!!!! WARNING !!!!!!!!!!
-     * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     * The Following line of code is vulnerable to
-     * a buffer overrun exploit!!
-     * We need to impliment a method to force the 
-     * release message to be LESS THAN 1K!!!!!!!!!
-     */
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
     // Decrypt the version number, and put it in a 32 bit unsigned int
     struct AES_ctx version_ctx;
