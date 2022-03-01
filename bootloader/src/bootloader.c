@@ -435,7 +435,7 @@ void handle_configure(void)
         remaining -= frame_size;
     }
 
-    flash_erase_psage(CONFIGURATION_METADATA_PTR);
+    flash_erase_page(CONFIGURATION_METADATA_PTR);
     flash_write_word(size, CONFIGURATION_SIZE_PTR);
     uart_writeb(HOST_UART, FRAME_OK);
 }
