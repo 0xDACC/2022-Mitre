@@ -15,6 +15,7 @@ import argparse
 import json
 import logging
 from pathlib import Path
+from platform import release
 import socket
 import struct
 
@@ -34,6 +35,10 @@ def update_firmware(socket_number: int, firmware_file: Path):
         release_msg: str = data["release_msg"]
         firmware = bytes.fromhex(data["firmware"])
         firmware_size = len(firmware)
+
+        # Truncate release message if greater than 1k to keep it in the security requirements
+        if len(release_msg > 1024):
+            release_msg = release_msg[0:1024]
 
     # Connect to the bootloader
     log.info("Connecting socket...")
