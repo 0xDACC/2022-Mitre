@@ -245,6 +245,7 @@ void load_firmware(uint32_t interface, uint32_t size){
 
     remaining = size;
 
+    // Write firmware to flash
     while(remaining > 0) {
         // calculate frame size
         frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
@@ -354,8 +355,7 @@ void handle_update(void)
 /**
  * @brief Load configuration data.
  */
-void handle_configure(void)
-{
+void handle_configure(void){
     uint32_t size = 0;
 
     // Acknowledge the host
@@ -366,6 +366,55 @@ void handle_configure(void)
     size |= (((uint32_t)uart_readb(HOST_UART)) << 16);
     size |= (((uint32_t)uart_readb(HOST_UART)) << 8);
     size |= ((uint32_t)uart_readb(HOST_UART));
+
+    int i;
+    int j;
+    uint32_t frame_size;
+    uint8_t page_buffer[FLASH_PAGE_SIZE];
+    uint32_t dst = CONFIGURATION_STORAGE_PTR;
+    uint8_t config_buffer[size];
+    uint32_t pos = 0;
+    uint32_t remaining = size;
+
+    // Fill the firmware buffer
+    while(remaining > 0) {
+        // calculate frame size
+        if(remaining > FLASH_PAGE_SIZE){
+            frame_size = FLASH_PAGE_SIZE;
+        } else {
+            frame_size = remaining;
+        }
+        // read frame into buffer
+        uart_read(HOST_UART, config_buffer, frame_size);
+        // pad buffer if frame is smaller than the page
+        for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
+            page_buffer[i] = 0xFF;
+        }
+        // add the page buffer to the firmware buffer
+        for(j = 0; j < frame_size; j++){
+            config_buffer[j + pos] = page_buffer[j];
+        }
+        pos += FLASH_PAGE_SIZE;
+        remaining -= frame_size;
+        j = 0;
+
+        // Acknowledge the host
+        uart_writeb(HOST_UART, FRAME_OK);
+
+    }
+
+    // Decrypt
+    struct AES_ctx config_ctx;
+    AES_init_ctx_iv(&config_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&config_ctx, config_buffer, size);
+
+    // Check signature
+    for(i = 0; i < 16; i++){
+        if(password[i] != config_buffer[((size)-16)+i]){
+            // Firmware is not signed with the correct password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
 
     flash_erase_page(CONFIGURATION_METADATA_PTR);
     flash_write_word(size, CONFIGURATION_SIZE_PTR);
@@ -457,29 +506,6 @@ int main(void) {
     if (current_version == 0xFFFFFFFF){
         flash_write_word((uint32_t)OLDEST_VERSION, FIRMWARE_VERSION_PTR);
     }
-
-/* #ifdef EXAMPLE_AES
-    // -------------------------------------------------------------------------
-    // example encryption using tiny-AES-c
-    // -------------------------------------------------------------------------
-    struct AES_ctx ctx;
-    uint8_t key[16] = { 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 
-                        0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf };
-    uint8_t plaintext[16] = "0123456789abcdef";
-
-    // initialize context
-    AES_init_ctx(&ctx, key);
-
-    // encrypt buffer (encryption happens in place)
-    AES_ECB_encrypt(&ctx, plaintext);
-
-    // decrypt buffer (decryption happens in place)
-    AES_ECB_decrypt(&ctx, plaintext);
-    // -------------------------------------------------------------------------
-    // end example
-    // -------------------------------------------------------------------------
-#endif */
-
     // Initialize IO components
     uart_init();
 
