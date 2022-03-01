@@ -1,8 +1,22 @@
-# 0xDACC Official 2022 Mitre eCTF git repo
-Source and documentation for the 0xDACC team
+# 2022 MITRE eCTF Challenge: Secure Avionics Flight Firmware Installation Routine (SAFFIRe)
+This repository contains an example reference system for MITRE's 2022 Embedded System CTF
+(eCTF) - see https://ectf.mitre.org/ for details. This code is incomplete, insecure, and 
+does not meet MITRE standards for quality.  This code is being provided for educational 
+purposes to serve as a simple example that meets the minimum functional requirements for 
+the 2022 eCTF.  Use this code at your own risk!
 
-Developement work will be stored in the developement branch
+## Getting Started
+Please see the [Getting Started Guide](getting_started.md).
 
-The main branch is the most current stable functioning code
+## Project Structure
+The example code is structured as follows
 
-There is the example code in the example branch for easier viewing within an IDE - Please dont commit to that branch
+* `bootloader/` - Contains everything to build the SAFFIRE bootloader. See [Bootloader README](bootloader/README.md).
+* `configuration/` - Directory to hold raw and protected configuration images. The repo comes with an example unprotected configuration binary.
+* `dockerfiles/` - Contains all Dockerfiles to build system.
+* `firmware/` - Directory to contain raw and protected firmware images. The repo comes with an example unprotected firmware binary.
+* `host-tools/` - Contains the host tools.
+* `platform/` - Contains everything to run the avionic device.
+* `tools/` - Miscellaneous tools to run and interract with SAFFIRe.
+* `saffire.cfg` - An example option config file for running SAFFIRe
+

@@ -1,0 +1,123 @@
+#!/usr/bin/python3 -u
+
+# 2022 eCTF
+# Protect Firmware Tool
+# Kyle Scaplen
+#
+# (c) 2022 The MITRE Corporation
+#
+# This source file is part of an example system for MITRE's 2022 Embedded System
+# CTF (eCTF). This code is being provided only for educational purposes for the
+# 2022 MITRE eCTF competition, and may not meet MITRE standards for quality.
+# Use this code at your own risk!
+
+import argparse
+from importlib.resources import path
+import json
+import logging
+from Crypto.Cipher import AES
+from pathlib import Path
+import os
+
+from util import print_banner, FIRMWARE_ROOT, LOG_FORMAT
+
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+log = logging.getLogger(Path(__file__).name)
+
+
+def protect_firmware(
+    firmware_file: Path, version: int, release_message: str, protected_firmware: Path
+):
+    print_banner("SAFFIRe Firmware Protect Tool")
+
+    # Read in the raw firmware binary
+    log.info("Reading the firmware...\n")
+    firmware_data = firmware_file.read_bytes()
+
+    # Encrypt the firmware
+    log.info("Encrypting the firmware...\n")
+
+    key = Path("/secrets/key").read_bytes()
+    iv = Path("/secrets/iv").read_bytes()
+    password = Path("/secrets/password").read_bytes()
+
+    # because we don't know the size of the file, we need to 
+    # pad it until it divides by 16
+    padded_firmware = firmware_data
+    padded_firmware += (b'\x00' * ((16 - len(firmware_data) % 16) % 16))
+    # Add the password as a signature for the bootloader to check
+    padded_firmware += password
+
+    cipher = AES.new(key, AES.MODE_CBC, iv)  # creating new aes object. We can only use this object once
+
+    encrypted_firmware = cipher.encrypt(padded_firmware)  # encrypt() returns a byte string e.g. b'0123456789abcdef'
+
+    # Encrypt the version number as well. Only way I could think to
+    # stop the version from being tampered with without drastically changing the way the update works.
+    # We need the first 16 bits to be the version number
+    # so ill check if the number is higher than 255 and pad the front
+    # and it has to be 16 bits so its capped at 65535. 
+    if 255 < version < 65535:
+        padded_version = version.to_bytes(2, 'little')
+    elif version < 255:
+        padded_version = b'\x00' + version.to_bytes(1, 'little')
+    else:
+        padded_version = b'\xff\xff'
+    
+    # now we pad the back to make it 16 bytes
+    padded_version += os.urandom(14) # Previously this was just 14 empty bytes, however that makes brute force much easier
+    # Add password as signature
+    padded_version += password
+
+    versioncip = AES.new(key, AES.MODE_CBC, iv)  # new aes object. We can only use this object once
+
+    encrypted_version = versioncip.encrypt(padded_version)
+
+    log.info("Packaging the firmware...")
+
+    # Construct the metadata
+
+    # Create firmware storage structure
+    data = {
+        "firmware_size": len(encrypted_firmware),
+        "version_num": encrypted_version.hex(),
+        "release_msg": release_message,
+        "firmware": encrypted_firmware.hex()
+    }
+
+    # Open/create a new file which will contain the packed fw info, as well as encrypted 
+    with protected_firmware.open("w", encoding="utf8") as pf:
+        json.dump(data, pf)
+
+    log.info("Firmware protected\n")
+
+
+def main():
+    # get arguments
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--firmware", help="The name of the firmware image to protect.", required=True
+    )
+    parser.add_argument(
+        "--version", help="The version of this firmware.", type=int, required=True
+    )
+    parser.add_argument(
+        "--release-message", help="The release message of this firmware.", required=True
+    )
+    parser.add_argument(
+        "--output-file", help="The name of the protected firmware image.", required=True
+    )
+
+    args = parser.parse_args()
+
+    # process command
+    firmware_file = FIRMWARE_ROOT / args.firmware
+    protected_firmware = FIRMWARE_ROOT / args.output_file
+    protect_firmware(
+        firmware_file, args.version, args.release_message, protected_firmware
+    )
+
+
+if __name__ == "__main__":
+    main()

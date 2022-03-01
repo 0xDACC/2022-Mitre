@@ -1,0 +1,25 @@
+# Keygen script for saffire
+# Team: 0xDACC
+# Author: Dillon Driskill and Matthew Weikel
+
+import os
+from pathlib import Path
+
+def main():
+
+    # Generate 128 bit (16 byte) key
+    key = Path("/secrets/key")
+    key.write_bytes(os.urandom(16))
+
+    # Generate 128 bit (16 byte) iv
+    iv = Path("/secrets/iv")
+    iv.write_bytes(os.urandom(16))
+
+    # Generate a password for readback
+    password = Path("/secrets/password")
+    password.write_bytes(os.urandom(16))
+
+    return 0
+
+if __name__ == "__main__":
+    main()
