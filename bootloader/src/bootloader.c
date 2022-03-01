@@ -252,7 +252,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)firmware_buffer, dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
@@ -357,7 +357,15 @@ void handle_update(void)
  */
 void handle_configure(void)
 {
+    int i;
+    int j;
     uint32_t size = 0;
+    uint32_t frame_size;
+    uint8_t page_buffer[FLASH_PAGE_SIZE];
+    uint32_t dst = CONFIGURATION_STORAGE_PTR;
+    uint8_t config_buffer[size];
+    uint32_t pos = 0;
+    uint32_t remaining = size;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
@@ -367,15 +375,6 @@ void handle_configure(void)
     size |= (((uint32_t)uart_readb(HOST_UART)) << 16);
     size |= (((uint32_t)uart_readb(HOST_UART)) << 8);
     size |= ((uint32_t)uart_readb(HOST_UART));
-
-    int i;
-    int j;
-    uint32_t frame_size;
-    uint8_t page_buffer[FLASH_PAGE_SIZE];
-    uint32_t dst = CONFIGURATION_STORAGE_PTR;
-    uint8_t config_buffer[size];
-    uint32_t pos = 0;
-    uint32_t remaining = size;
 
     // Fill the firmware buffer
     while(remaining > 0) {
@@ -416,6 +415,24 @@ void handle_configure(void)
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
         }
+    }
+
+    // Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
+
+    remaining = size;
+
+    // Write firmware to flash
+    while(remaining > 0) {
+        // calculate frame size
+        frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
+        // clear flash page
+        flash_erase_page(dst);
+        // write flash page
+        flash_write((uint32_t *)config_buffer, dst, FLASH_PAGE_SIZE >> 2);
+        // next page and decrease size
+        dst += FLASH_PAGE_SIZE;
+        remaining -= frame_size;
     }
 
     flash_erase_psage(CONFIGURATION_METADATA_PTR);
