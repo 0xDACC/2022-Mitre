@@ -355,7 +355,8 @@ void handle_update(void)
 /**
  * @brief Load configuration data.
  */
-void handle_configure(void){
+void handle_configure(void)
+{
     uint32_t size = 0;
 
     // Acknowledge the host
@@ -415,13 +416,11 @@ void handle_configure(void){
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
         }
+    }
 
-    flash_erase_page(CONFIGURATION_METADATA_PTR);
+    flash_erase_psage(CONFIGURATION_METADATA_PTR);
     flash_write_word(size, CONFIGURATION_SIZE_PTR);
     uart_writeb(HOST_UART, FRAME_OK);
-    
-    // Retrieve configuration
-    load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size);
 }
 
 /**
@@ -430,7 +429,7 @@ void handle_configure(void){
  * 
  * @return int
  */
-int main(void) {
+int main(void){
     // Reading key iv and password from eeprom. (needs a uint32_t pointer. )
     EEPROMRead(key32, (uint32_t)KEY_OFFSET_PTR, 16);
     EEPROMRead(iv32, (uint32_t)IV_OFFSET_PTR, 16);
