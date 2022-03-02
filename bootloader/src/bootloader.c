@@ -363,9 +363,8 @@ void handle_configure(void)
     uint32_t frame_size;
     uint8_t page_buffer[FLASH_PAGE_SIZE];
     uint32_t dst = CONFIGURATION_STORAGE_PTR;
-    uint8_t config_buffer[size];
     uint32_t pos = 0;
-    uint32_t remaining = size;
+    uint32_t remaining;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
@@ -375,6 +374,9 @@ void handle_configure(void)
     size |= (((uint32_t)uart_readb(HOST_UART)) << 16);
     size |= (((uint32_t)uart_readb(HOST_UART)) << 8);
     size |= ((uint32_t)uart_readb(HOST_UART));
+
+    remaining = size;
+    uint8_t config_buffer[size];
 
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
@@ -403,7 +405,6 @@ void handle_configure(void)
 
         // Acknowledge the host
         uart_writeb(HOST_UART, FRAME_OK);
-
     }
 
     // Decrypt
