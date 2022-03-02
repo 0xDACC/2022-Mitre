@@ -395,7 +395,7 @@ void handle_configure(void)
         for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
             page_buffer[i] = 0xFF;
         }
-        // add the page buffer to the firmware buffer
+        // add the page buffer to the config buffer
         for(j = 0; j < frame_size; j++){
             config_buffer[j + pos] = page_buffer[j];
         }
@@ -421,9 +421,6 @@ void handle_configure(void)
         }
     }
 
-    // Acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
-
     remaining = size;
 
     // Write firmware to flash
@@ -441,6 +438,8 @@ void handle_configure(void)
 
     flash_erase_page(CONFIGURATION_METADATA_PTR);
     flash_write_word(size, CONFIGURATION_SIZE_PTR);
+
+    // Acknowledge host
     uart_writeb(HOST_UART, FRAME_OK);
 }
 
