@@ -376,6 +376,9 @@ void handle_configure(void)
     size |= (((uint32_t)uart_readb(HOST_UART)) << 8);
     size |= ((uint32_t)uart_readb(HOST_UART));
 
+    // Acknowledge the host
+    uart_writeb(HOST_UART, FRAME_OK);
+
     // Fill the firmware buffer
     while(remaining > 0) {
         // calculate frame size
