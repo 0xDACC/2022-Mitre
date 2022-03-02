@@ -426,7 +426,11 @@ void handle_configure(void)
     // Write firmware to flash
     while(remaining > 0) {
         // calculate frame size
-        frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
+        if(remaining > FLASH_PAGE_SIZE){
+            frame_size = FLASH_PAGE_SIZE;
+        } else {
+            frame_size = remaining;
+        }
         // clear flash page
         flash_erase_page(dst);
         // write flash page
