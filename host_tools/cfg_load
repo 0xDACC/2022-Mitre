@@ -54,6 +54,8 @@ def load_configuration(socket_number: int, config_file: Path):
 
         # Send packets
         send_packets(sock, configuration)
+        if response != RESP_OK:
+            exit(f"ERROR: Bootloader responded with {repr(response)}")
 
         log.info("Firmware configured\n")
 
