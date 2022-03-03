@@ -421,16 +421,15 @@ void handle_configure(void)
         }
     }
 
+    // Acknowledge the host
+    uart_writeb(HOST_UART, FRAME_OK);
+
     remaining = size;
 
     // Write firmware to flash
     while(remaining > 0) {
         // calculate frame size
-        if(remaining > FLASH_PAGE_SIZE){
-            frame_size = FLASH_PAGE_SIZE;
-        } else {
-            frame_size = remaining;
-        }
+        frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
         // clear flash page
         flash_erase_page(dst);
         // write flash page
@@ -439,12 +438,6 @@ void handle_configure(void)
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
     }
-
-    flash_erase_page(CONFIGURATION_METADATA_PTR);
-    flash_write_word(size, CONFIGURATION_SIZE_PTR);
-
-    // Acknowledge host
-    uart_writeb(HOST_UART, FRAME_OK);
 }
 
 /**
