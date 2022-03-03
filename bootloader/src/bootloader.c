@@ -240,10 +240,8 @@ void load_firmware(uint32_t interface, uint32_t size){
         }
     }
 
-    // Acknowledge the host
-    uart_writeb(HOST_UART, FRAME_OK);
-
     remaining = size;
+    pos = 0;
 
     // Write firmware to flash
     while(remaining > 0) {
@@ -252,10 +250,11 @@ void load_firmware(uint32_t interface, uint32_t size){
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t *)firmware_buffer, dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t )&firmware_buffer[pos], dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
+        pos += frame_size;
     }
 }
 
@@ -273,7 +272,6 @@ void handle_update(void)
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'U');
-
     // Receive version, store in buffer for decryption
     uart_read(HOST_UART, vbuff, 32);
     // Acknowledge
@@ -349,6 +347,9 @@ void handle_update(void)
         rem_bytes += 4 - (rem_bytes % 4); // Account for partial word
     }
     flash_write((uint32_t *)rel_msg_read_ptr, rel_msg_write_ptr, rem_bytes >> 2);
+
+    //Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
 }
 
 
@@ -421,10 +422,10 @@ void handle_configure(void)
         }
     }
 
-    // Acknowledge the host
-    uart_writeb(HOST_UART, FRAME_OK);
-
     remaining = size;
+    pos = 0;
+    //clear firmware metadata
+    flash_erase_page(FIRMWARE_METADATA_PTR);
 
     // Write firmware to flash
     while(remaining > 0) {
@@ -433,11 +434,15 @@ void handle_configure(void)
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t *)config_buffer, dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)&config_buffer[pos], dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
+        pos += frame_size;
     }
+
+    // Acknowledge the host
+    uart_writeb(HOST_UART, FRAME_OK);
 }
 
 /**
