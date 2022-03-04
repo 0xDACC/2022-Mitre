@@ -133,6 +133,9 @@ void handle_readback(void)
 
     uart_read(HOST_UART, pbuff, 16);
 
+    //Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
+
     for(int i = 0; i < 16; i++){
         if(pbuff[i] != password[i]){
             //incorrect or invalid password
