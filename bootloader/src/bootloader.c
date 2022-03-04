@@ -79,9 +79,6 @@ uint8_t key[16];
 uint8_t iv[16];
 uint8_t password[16];
 
-uint32_t config_size;
-uint32_t firmware_size;
-
 /**
  * @brief Boot the firmware.
  */
@@ -169,6 +166,17 @@ void handle_readback(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 16;
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
+
+    // Ensuring you cant read more info than you need.
+    if(region == 'F'){
+        if(size > 0x4000){
+            size = 0x4000;
+        }
+    } else {
+        if(size > 0xFFFF){
+            size = 0xFFFF;
+        }
+    }
 
     // Read out the memory
     uart_write(HOST_UART, address, size);
@@ -332,10 +340,11 @@ void handle_update(void)
     //Acknowledge
     uart_writeb(HOST_UART, FRAME_OK);
 
-    load_firmware(HOST_UART, size);
-
     // Clear firmware metadata
     flash_erase_page(FIRMWARE_METADATA_PTR);
+
+    //load firmware
+    load_firmware(HOST_UART, size);
 
     // Only save new version if it is not 0
     if (version != 0) {
@@ -344,6 +353,12 @@ void handle_update(void)
 
     // Save size
     flash_write_word(size, FIRMWARE_SIZE_PTR);
+
+    //clear page for message
+    flash_erase_page(FIRMWARE_RELEASE_MSG_PTR);
+    
+    //write message
+    flash_write((uint32_t *)rel_msg, FIRMWARE_RELEASE_MSG_PTR, FLASH_PAGE_SIZE >> 2);
 
     // Write release message
     uint8_t *rel_msg_read_ptr = rel_msg;
