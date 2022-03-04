@@ -16,7 +16,6 @@ import logging
 import socket
 from pathlib import Path
 from urllib import response
-from host_tools.util import send_packets
 
 from util import print_banner, LOG_FORMAT, send_packets
 
