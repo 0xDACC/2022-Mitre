@@ -18,7 +18,7 @@ from pathlib import Path
 from urllib import response
 from host_tools.util import send_packets
 
-from util import print_banner, LOG_FORMAT
+from util import print_banner, LOG_FORMAT, send_packets
 
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 log = logging.getLogger(Path(__file__).name)
