@@ -79,6 +79,9 @@ uint8_t key[16];
 uint8_t iv[16];
 uint8_t password[16];
 
+uint32_t config_size;
+uint32_t firmware_size;
+
 /**
  * @brief Boot the firmware.
  */
@@ -123,9 +126,23 @@ void handle_readback(void)
     uint8_t region;
     uint8_t *address;
     uint32_t size = 0;
+    uint8_t pbuff[16];
     
     // Acknowledge the host
     uart_writeb(HOST_UART, 'R');
+
+    uart_read(HOST_UART, pbuff, 16);
+
+    for(int i = 0; i < 16; i++){
+        if(pbuff[i] != password[i]){
+            //incorrect or invalid password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
+    //Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
 
     // Receive region identifier
     region = (uint32_t)uart_readb(HOST_UART);
@@ -264,9 +281,10 @@ void load_firmware(uint32_t interface, uint32_t size){
 void handle_update(void)
 {
     // metadata
+    int i;
     uint8_t vbuff[32];  // 8 bits because we're going to read 1 byte at a time
     uint32_t version = 0;
-    uint32_t size = 0x00000000;
+    uint32_t size = 0;
     uint32_t rel_msg_size = 0;
     uint8_t rel_msg[1025]; // 1024 + terminator
 
@@ -294,9 +312,9 @@ void handle_update(void)
 
     /* Now that we have decrypted the 32 byte (16 bytes of version+pad, and 16 bytes of password)
     * Lets check if its correct */
-   for(int i = 0; i<16; i++){
+   for(i = 0; i<16; i++){
        if (password[i] != vbuff[16+i]){
-           // Version Number is not signed with the correct password
+            // Version Number is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
         }
@@ -391,7 +409,7 @@ void handle_configure(void)
             frame_size = remaining;
         }
         // read frame into buffer
-        uart_read(HOST_UART, page_buffer, frame_size);
+        uart_read(HOST_UART, config_buffer, frame_size);
         // pad buffer if frame is smaller than the page
         for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
             page_buffer[i] = 0xFF;
