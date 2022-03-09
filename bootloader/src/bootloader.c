@@ -191,7 +191,7 @@ void handle_readback(void)
             uint8_t readbuff[fsize];
 
             //this should fill the buffer with the previously encrypted data
-            for(int i = 0; i < 1024; i++){
+            for(int i = 0; i < fsize; i++){
                 readbuff[i] = address[i];
             }  
 
