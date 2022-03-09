@@ -85,18 +85,32 @@ uint8_t password[16];
 void handle_boot(void)
 {
     uint32_t size;
+    uint32_t fsize = *(uint32_t *)FIRMWARE_SIZE_PTR;
     uint32_t i = 0;
     uint8_t *rel_msg;
+    uint8_t address = (uint8_t *)FIRMWARE_STORAGE_PTR;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'B');
 
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
+    
+    //fill our buffer
+    uint8_t firmwarebuffer[fsize];
+
+    for(i = 0; i < fsize; i++){
+        firmwarebuffer[i] = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+    }
+
+    //decrypt
+    struct AES_ctx bootctx;
+    AES_init_ctx_iv(&bootctx, key, iv);
+    AES_CBC_decrypt_buffer(&firmwarebuffer, key, iv);
 
     // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = firmwarebuffer[i];
     }
 
     uart_writeb(HOST_UART, 'M');
@@ -110,7 +124,7 @@ void handle_boot(void)
     uart_writeb(HOST_UART, '\0');
 
     // Execute the firmware
-    void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR + 1);
+    void (*firmware)(void) = (void (*)(void))(firmwarebuffer + 1);
     firmware();
 }
 
@@ -178,8 +192,29 @@ void handle_readback(void)
         }
     }
 
-    // Read out the memory
-    uart_write(HOST_UART, address, size);
+    uint32_t csize;
+
+    // make sure that whatever we grab is divisible by 16 for decryption
+    if((size % 16) == 0){
+        size = size;
+    } else {
+        csize = size + (16-(size%16));
+    }
+
+    uint8_t cryptobuff[csize];
+
+    //now we fill our buffer so we can decrypt it
+    for(int i = 0; i < csize; i++){
+        cryptobuff[csize] = address + i;
+    }
+
+    //now decrypt
+    struct AES_ctx readbackctx;
+    AES_init_ctx_iv(&readbackctx, key, iv);
+    AES_CBC_decrypt_buffer(&readbackctx, cryptobuff, csize);    
+
+    // Read out the stuff
+    uart_write(HOST_UART, &cryptobuff, size);
 }
 
 
@@ -267,6 +302,9 @@ void load_firmware(uint32_t interface, uint32_t size){
             return;
         }
     }
+
+    //re-encrypt for storage on flash
+    AES_CBC_encrypt_buffer(&firmware_ctx, firmware_buffer, size);
 
     remaining = size;
     pos = 0;
@@ -457,6 +495,9 @@ void handle_configure(void)
             return;
         }
     }
+
+    //reencrypt for storage
+    AES_CBC_encrypt_buffer(&config_ctx, config_buffer, size);
 
     remaining = size;
     pos = 0;
