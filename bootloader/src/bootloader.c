@@ -102,7 +102,7 @@ void handle_boot(void)
     //decrypt the firmware data
     struct AES_ctx boot_ctx;
     AES_init_ctx_iv(&boot_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&boot_ctx, (uint32_t *)(FIRMWARE_BOOT_PTR), size);
+    AES_CBC_decrypt_buffer(&boot_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
 
     //check for password
     for(i = 0; i < 16; i++){
