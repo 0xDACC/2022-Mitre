@@ -121,7 +121,7 @@ uint32_t uart_readline(uint32_t uart, uint8_t *buf)
     do {
         c = (uint8_t)uart_readb(uart);
 
-        if ((c != '\r') && (c != '\n') && (c != '\0')) {
+        if ((c != '\r') && (c != '\n') && (c != '\0') && (read < 1025)) {
             buf[read] = c;
             read++;
         }
