@@ -99,6 +99,19 @@ void handle_boot(void)
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
+    //decrypt the firmware data
+    struct AES_ctx boot_ctx;
+    AES_init_ctx_iv(&boot_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&boot_ctx, *((uint8_t *)(FIRMWARE_BOOT_PTR)), size);
+
+    //check for password
+    for(i = 0; i < 16; i++){
+        if(password[i] != *((uint8_t *)(FIRMWARE_BOOT_PTR + (size - 16) + i))){
+            //password is incorrect
+            uart_writeb(HOST_UART, FRAME_BAD);
+        }
+    }
+
     uart_writeb(HOST_UART, 'M');
 
     // Print the release message
@@ -178,8 +191,22 @@ void handle_readback(void)
         }
     }
 
+    //setting up buffers to be decrypted
+    uint32_t rsize = size + (16 - (size % 16));
+    uint8_t readbuff[rsize];
+
+    //this should fill the buffer with the previously encrypted data
+    for(int i = 0; i < 1024; i++){
+        readbuff[i] = address[i];
+    }  
+
+    //Decrypt the information
+    struct AES_ctx readback_ctx;
+    AES_init_ctx_iv(&readback_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&readback_ctx, readbuff, rsize);
+
     // Read out the memory
-    uart_write(HOST_UART, address, size);
+    uart_write(HOST_UART, readbuff, size);
 }
 
 
@@ -267,6 +294,9 @@ void load_firmware(uint32_t interface, uint32_t size){
             return;
         }
     }
+
+    //encrypt before we write to the flash
+    AES_CBC_encrypt_buffer(&firmware_ctx, firmware_buffer, size);
 
     remaining = size;
     pos = 0;
