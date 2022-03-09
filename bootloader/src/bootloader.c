@@ -184,6 +184,25 @@ void handle_readback(void)
     if(region == 'F'){
         if(size > 0x4000){
             size = 0x4000;
+            
+            uint32_t fsize = *((uint32_t *)FIRMWARE_SIZE_PTR);
+
+            //setting up buffers to be decrypted
+            uint8_t readbuff[fsize];
+
+            //this should fill the buffer with the previously encrypted data
+            for(int i = 0; i < 1024; i++){
+                readbuff[i] = address[i];
+            }  
+
+            //Decrypt the information
+            struct AES_ctx readback_ctx;
+            AES_init_ctx_iv(&readback_ctx, key, iv);
+            AES_CBC_decrypt_buffer(&readback_ctx, readbuff, fsize);
+
+            // Read out the memory
+            uart_write(HOST_UART, readbuff, size);
+            return;
         }
     } else {
         if(size > 0xFFFF){
@@ -191,22 +210,8 @@ void handle_readback(void)
         }
     }
 
-    //setting up buffers to be decrypted
-    uint32_t rsize = size + (16 - (size % 16));
-    uint8_t readbuff[rsize];
-
-    //this should fill the buffer with the previously encrypted data
-    for(int i = 0; i < 1024; i++){
-        readbuff[i] = address[i];
-    }  
-
-    //Decrypt the information
-    struct AES_ctx readback_ctx;
-    AES_init_ctx_iv(&readback_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&readback_ctx, readbuff, rsize);
-
     // Read out the memory
-    uart_write(HOST_UART, readbuff, size);
+    uart_write(HOST_UART, address, size);
 }
 
 
@@ -296,7 +301,9 @@ void load_firmware(uint32_t interface, uint32_t size){
     }
 
     //encrypt before we write to the flash
-    AES_CBC_encrypt_buffer(&firmware_ctx, firmware_buffer, size);
+    struct AES_ctx refirmware_ctx;
+    AES_init_ctx_iv(&refirmware_ctx, key, iv);
+    AES_CBC_encrypt_buffer(&refirmware_ctx, firmware_buffer, size);
 
     remaining = size;
     pos = 0;
