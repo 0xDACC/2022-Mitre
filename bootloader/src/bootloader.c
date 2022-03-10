@@ -104,6 +104,8 @@ void handle_boot(void)
     AES_init_ctx_iv(&boot_ctx, key, iv);
     AES_CBC_decrypt_buffer(&boot_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
 
+    i = 0;
+
     //check for password
     for(i = 0; i < 16; i++){
         if(password[i] != *((uint8_t *)(FIRMWARE_BOOT_PTR + (size - 16) + i))){
