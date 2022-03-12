@@ -88,6 +88,7 @@ void handle_boot(void)
     uint32_t password_pos;
     uint32_t i = 0;
     uint8_t *rel_msg;
+    uint8_t *boot = (uint8_t *)FIRMWARE_BOOT_PTR;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'B');
@@ -98,18 +99,17 @@ void handle_boot(void)
 
     // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+        boot[i] = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
     // Decrypt in place
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, *(uint8_t *)(FIRMWARE_BOOT_PTR), size);
+    AES_CBC_decrypt_buffer(&firmware_ctx, boot, size);
 
-    // Check for password
     for(int i = 0; i < 16; i++){
-        if(*((uint8_t *)(FIRMWARE_BOOT_PTR + password_pos + i)) != password[i]){
-            //Password is not correct
+        if(boot[password_pos + i] != password[i]){
+            // password is incorrect, so the firmware was tampered with
             uart_writeb(HOST_UART, FRAME_BAD);
         }
     }
@@ -202,10 +202,13 @@ void handle_readback(void)
         readback_buffer[i] = address[i];
     }
 
-    // Decrypt
-    struct AES_ctx readback_ctx;
-    AES_init_ctx_iv(&readback_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, size);
+    // Since the config isnt encrytped (because really we cant tell the firmware how to decrypt it) we only want to decrypt the firmware
+    if(region == 'F'){
+        // Decrypt
+        struct AES_ctx readback_ctx;
+        AES_init_ctx_iv(&readback_ctx, key, iv);
+        AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, dsize);
+    }
 
     // Read out the memory
     uart_write(HOST_UART, readback_buffer, size);
