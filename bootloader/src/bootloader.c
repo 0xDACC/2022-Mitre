@@ -94,30 +94,9 @@ void handle_boot(void)
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
 
-    //buffer for decryption
-    uint8_t firmware_buffer[size];
-
-    //fill uffer
+    // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
-        firmware_buffer[i] = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
-    }
-
-    //decrypt the firmware data
-    struct AES_ctx boot_ctx;
-    AES_init_ctx_iv(&boot_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&boot_ctx, firmware_buffer, size);
-
-    //check for password
-    for(i = 0; i < 16; i++){
-        if(password[i] != firmware_buffer[size-16+i]){
-            //password is incorrect
-            uart_writeb(HOST_UART, FRAME_BAD);
-        }
-    }
-
-    // Copy the now decrypted firmware into the Boot RAM section
-    for (i = 0; i < size; i++) {
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = firmware_buffer[i];
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
     uart_writeb(HOST_UART, 'M');
@@ -192,25 +171,6 @@ void handle_readback(void)
     if(region == 'F'){
         if(size > 0x4000){
             size = 0x4000;
-            
-            uint32_t fsize = *(uint32_t *)(FIRMWARE_SIZE_PTR);
-
-            //setting up buffers to be decrypted
-            uint8_t readbuff[fsize];
-
-            //this should fill the buffer with the previously encrypted data
-            for(int i = 0; i < fsize; i++){
-                readbuff[i] = address[i];
-            }  
-
-            //Decrypt the information
-            struct AES_ctx readback_ctx;
-            AES_init_ctx_iv(&readback_ctx, key, iv);
-            AES_CBC_decrypt_buffer(&readback_ctx, readbuff, fsize);
-
-            // Read out the memory
-            uart_write(HOST_UART, readbuff, size);
-            return;
         }
     } else {
         if(size > 0xFFFF){
@@ -308,7 +268,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         }
     }
 
-    //encrypt before we write to the flash
+    // encrypt again for storage on the flash
     struct AES_ctx refirmware_ctx;
     AES_init_ctx_iv(&refirmware_ctx, key, iv);
     AES_CBC_encrypt_buffer(&refirmware_ctx, firmware_buffer, size);
@@ -505,6 +465,7 @@ void handle_configure(void)
 
     remaining = size;
     pos = 0;
+    
     //clear firmware metadata
     flash_erase_page(FIRMWARE_METADATA_PTR);
 
