@@ -85,6 +85,7 @@ uint8_t password[16];
 void handle_boot(void)
 {
     uint32_t size;
+    uint32_t password_pos;
     uint32_t i = 0;
     uint8_t *rel_msg;
 
@@ -93,10 +94,24 @@ void handle_boot(void)
 
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
+    password_pos = size-16;
 
     // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+    }
+
+    // Decrypt in place
+    struct AES_ctx firmware_ctx;
+    AES_init_ctx_iv(&firmware_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
+
+    // Check for password
+    for(int i = 0; i < 16; i++){
+        if(*((uint8_t *)(FIRMWARE_BOOT_PTR + password_pos + i)) != password[i]){
+            //Password is not correct
+            uart_writeb(HOST_UART, FRAME_BAD);
+        }
     }
 
     uart_writeb(HOST_UART, 'M');
@@ -178,8 +193,22 @@ void handle_readback(void)
         }
     }
 
+    // Ensuring that we can decrypt whatever we requested
+    uint32_t dsize = size + ((16 - (size%16))%16);
+    // buffer for decryption
+    uint8_t readback_buffer[dsize];
+
+    for(int i = 0; i < dsize; i++){
+        readback_buffer[i] = address[i];
+    }
+
+    // Decrypt
+    struct AES_ctx readback_ctx;
+    AES_init_ctx_iv(&readback_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, size);
+
     // Read out the memory
-    uart_write(HOST_UART, address, size);
+    uart_write(HOST_UART, readback_buffer, size);
 }
 
 
