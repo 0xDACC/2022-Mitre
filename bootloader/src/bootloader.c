@@ -88,7 +88,7 @@ void handle_boot(void)
     uint32_t password_pos;
     uint32_t i = 0;
     uint8_t *rel_msg;
-    uintptr_t *boot = (uint32_t)FIRMWARE_BOOT_PTR;
+    uint8_t *boot = FIRMWARE_BOOT_PTR;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'B');
