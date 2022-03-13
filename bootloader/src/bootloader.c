@@ -125,7 +125,7 @@ void handle_boot(void)
     uart_writeb(HOST_UART, '\0');
 
     // Execute the firmware
-    void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR + 1);
+    void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR);
     firmware();
 }
 
