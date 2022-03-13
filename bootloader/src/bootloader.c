@@ -105,9 +105,11 @@ void handle_boot(void)
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
     AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), *((uint32_t *)FIRMWARE_SIZE_PTR));
+    
+    i = 0;
 
     // check password
-    for(int i = 0; i < 16; i++){
+    for(i = 0; i < 16; i++){
         if(*((uint8_t *)(FIRMWARE_BOOT_PTR + (*((uint32_t *)FIRMWARE_SIZE_PTR)-16) + i)) != password[i]){
             // password is incorrect, so the firmware was tampered with
             uart_writeb(HOST_UART, FRAME_BAD);
