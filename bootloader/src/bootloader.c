@@ -97,18 +97,18 @@ void handle_boot(void)
     password_pos = size-16;
 
     // Copy the firmware into the Boot RAM section
-    for (i = 0; i < size; i++) {
+    for (i = 0; i < *((uint32_t *)FIRMWARE_SIZE_PTR); i++) {
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
     // Decrypt in place
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
+    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), *((uint32_t *)FIRMWARE_SIZE_PTR));
 
     // check password
     for(int i = 0; i < 16; i++){
-        if(*((uint8_t *)(FIRMWARE_BOOT_PTR + (size-16) + i)) != password[i]){
+        if(*((uint8_t *)(FIRMWARE_BOOT_PTR + (*((uint32_t *)FIRMWARE_SIZE_PTR)-16) + i)) != password[i]){
             // password is incorrect, so the firmware was tampered with
             uart_writeb(HOST_UART, FRAME_BAD);
         }
