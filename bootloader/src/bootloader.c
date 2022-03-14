@@ -88,7 +88,6 @@ void handle_boot(void)
     uint32_t password_pos;
     uint32_t i = 0;
     uint8_t *rel_msg;
-    uint32_t *boot = (uint32_t *)FIRMWARE_BOOT_PTR;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'B');    
@@ -96,9 +95,14 @@ void handle_boot(void)
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
 
+    uint8_t boot[size];
+
     // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
-        *((uint8_t *)(boot + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+        boot[i] = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+    }
+    for (i = 0; i < size; i++){
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = boot[i]
     }
 
     uart_writeb(HOST_UART, 'M');
