@@ -84,7 +84,7 @@ uint8_t password[16];
  */
 void handle_boot(void)
 {
-    uint32_t size;
+    uint32_t size = 0;
     uint32_t password_pos;
     uint32_t i = 0;
     uint8_t *rel_msg;
@@ -391,7 +391,7 @@ void handle_update(void)
     }
 
     // Save size
-    flash_write(size, FIRMWARE_SIZE_PTR, 1);
+    flash_write_word(size, FIRMWARE_SIZE_PTR);
 
     //clear page for message
     flash_erase_page(FIRMWARE_RELEASE_MSG_PTR);
