@@ -104,7 +104,7 @@ void handle_boot(void)
     // Decrypt in place
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, boot, *((uint32_t *)FIRMWARE_SIZE_PTR));
+    AES_CBC_decrypt_buffer(&firmware_ctx, boot, size);
     
     i = 0;
 
@@ -391,7 +391,7 @@ void handle_update(void)
     }
 
     // Save size
-    flash_write_word(size, FIRMWARE_SIZE_PTR);
+    flash_write(size, FIRMWARE_SIZE_PTR, 1);
 
     //clear page for message
     flash_erase_page(FIRMWARE_RELEASE_MSG_PTR);
