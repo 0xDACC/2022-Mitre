@@ -101,6 +101,8 @@ void handle_boot(void)
         *((uint8_t *)(boot + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
+    uart_writeb(HOST_UART, 'M');
+
     // Decrypt in place
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
@@ -115,8 +117,6 @@ void handle_boot(void)
             uart_writeb(HOST_UART, FRAME_BAD);
         }
     }
-
-    uart_writeb(HOST_UART, 'M');
 
     // Print the release message
     rel_msg = (uint8_t *)FIRMWARE_RELEASE_MSG_PTR;
