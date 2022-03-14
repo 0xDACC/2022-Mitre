@@ -102,7 +102,7 @@ void handle_boot(void)
         boot[i] = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
     for (i = 0; i < size; i++){
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = boot[i]
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = boot[i];
     }
 
     uart_writeb(HOST_UART, 'M');
