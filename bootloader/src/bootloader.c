@@ -97,8 +97,8 @@ void handle_boot(void)
     password_pos = size-16;
 
     // Copy the firmware into the Boot RAM section
-    for (i = 0; i < *((uint32_t *)FIRMWARE_SIZE_PTR); i++) {
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+    for (i = 0; i < 1360; i++) {
+        *(uint8_t *)(0x20004000 + i) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
     // Decrypt in place
@@ -127,7 +127,7 @@ void handle_boot(void)
     uart_writeb(HOST_UART, '\0');
 
     // Execute the firmware
-    void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR);
+    void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR + 1);
     firmware();
 }
 
@@ -273,7 +273,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         uart_read(HOST_UART, page_buffer, frame_size);
         // pad buffer if frame is smaller than the page
         for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
-            page_buffer[i] = 0xFF;
+            page_buffer[i] = 0x00;
         }
         // add the page buffer to the firmware buffer
         for(j = 0; j < frame_size; j++){
