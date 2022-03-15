@@ -93,14 +93,13 @@ void handle_boot(void)
 
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
-    uint8_t boot[size];
 
     // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
-    // Decrypt in place
+    // Decrypt
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
     AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
