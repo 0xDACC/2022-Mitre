@@ -85,7 +85,6 @@ uint8_t password[16];
 void handle_boot(void)
 {
     uint32_t size = 0;
-    uint32_t password_pos;
     uint32_t i = 0;
     uint8_t *rel_msg;
 
@@ -310,7 +309,11 @@ void load_firmware(uint32_t interface, uint32_t size){
     pos = 0;
 
     // Save size
-    flash_write_word(size, FIRMWARE_SIZE_PTR);
+    uint32_t sizesave = flash_write_word(size, FIRMWARE_SIZE_PTR);
+    if (sizesave != 0){
+        //error
+        uart_writeb(HOST_UART, FRAME_BAD);
+    }
 
     // Write firmware to flash
     while(remaining > 0) {
@@ -387,9 +390,15 @@ void handle_update(void)
     //load firmware
     load_firmware(HOST_UART, size);
 
+    int32_t flashstatus = 0;
+
     // Only save new version if it is not 0
     if (version != 0) {
         int32_t flashstatus = flash_write_word(version, FIRMWARE_VERSION_PTR);
+    }
+    if (flashstatus != 0){
+        //error
+        uart_writeb(HOST_UART, FRAME_BAD);
     }
 
     //clear page for message
