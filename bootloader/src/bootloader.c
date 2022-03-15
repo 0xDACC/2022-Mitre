@@ -95,14 +95,9 @@ void handle_boot(void)
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
 
-    uint8_t boot[size];
-
     // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
-        boot[i] = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
-    }
-    for (i = 0; i < size; i++){
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = boot[i];
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
     uart_writeb(HOST_UART, 'M');
@@ -110,13 +105,13 @@ void handle_boot(void)
     // Decrypt in place
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, boot, size);
+    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
     
     i = 0;
 
     // check password
     for(i = 0; i < 16; i++){
-        if(*((uint8_t *)(FIRMWARE_BOOT_PTR + (*((uint32_t *)FIRMWARE_SIZE_PTR)-16) + i)) != password[i]){
+        if(*((uint8_t *)(FIRMWARE_BOOT_PTR + (size-16) + i)) != password[i]){
             // password is incorrect, so the firmware was tampered with
             uart_writeb(HOST_UART, FRAME_BAD);
         }
@@ -314,6 +309,9 @@ void load_firmware(uint32_t interface, uint32_t size){
     remaining = size;
     pos = 0;
 
+    // Save size
+    flash_write_word(size, FIRMWARE_SIZE_PTR);
+
     // Write firmware to flash
     while(remaining > 0) {
         // calculate frame size
@@ -391,11 +389,8 @@ void handle_update(void)
 
     // Only save new version if it is not 0
     if (version != 0) {
-        flash_write_word(version, FIRMWARE_VERSION_PTR);
+        int32_t flashstatus = flash_write_word(version, FIRMWARE_VERSION_PTR);
     }
-
-    // Save size
-    flash_write_word(size, FIRMWARE_SIZE_PTR);
 
     //clear page for message
     flash_erase_page(FIRMWARE_RELEASE_MSG_PTR);
