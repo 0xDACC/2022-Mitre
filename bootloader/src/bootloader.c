@@ -99,14 +99,11 @@ void handle_boot(void)
     for (i = 0; i < size; i++) {
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
-    for (i = 0; i < size; i++) {
-        boot[i] = *((uint8_t *)(FIRMWARE_BOOT_PTR + i));
-    }
 
     // Decrypt in place
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, boot, size);
+    //AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
     
     i = 0;
 
