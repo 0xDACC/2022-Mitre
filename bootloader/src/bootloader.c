@@ -394,7 +394,7 @@ void handle_update(void)
 
     // Only save new version if it is not 0
     if (version != 0) {
-        int32_t flashstatus = flash_write_word(version, FIRMWARE_VERSION_PTR);
+        flashstatus = flash_write_word(version, FIRMWARE_VERSION_PTR);
     }
     if (flashstatus != 0){
         //error
