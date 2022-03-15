@@ -87,25 +87,26 @@ void handle_boot(void)
     uint32_t size = 0x00000000;
     uint32_t i = 0;
     uint8_t *rel_msg;
-    uint32_t *bootptr = (uint32_t *)(FIRMWARE_BOOT_PTR);
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'B');    
 
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
+    uint8_t boot[size];
 
     // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
-
-    uart_writeb(HOST_UART, 'M');
+    for (i = 0; i < size; i++) {
+        boot[i] = *((uint8_t *)(FIRMWARE_BOOT_PTR + i));
+    }
 
     // Decrypt in place
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, bootptr, size);
+    AES_CBC_decrypt_buffer(&firmware_ctx, boot, size);
     
     i = 0;
 
@@ -116,6 +117,12 @@ void handle_boot(void)
             uart_writeb(HOST_UART, FRAME_BAD);
         }
     }
+
+    for (i = 0; i < size; i++) {
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = boot[i];
+    }
+
+    uart_writeb(HOST_UART, 'M');
 
     // Print the release message
     rel_msg = (uint8_t *)FIRMWARE_RELEASE_MSG_PTR;
