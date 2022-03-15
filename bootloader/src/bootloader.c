@@ -87,6 +87,7 @@ void handle_boot(void)
     uint32_t size = 0x00000000;
     uint32_t i = 0;
     uint8_t *rel_msg;
+    uint32_t *bootptr = (uint32_t *)(FIRMWARE_BOOT_PTR);
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'B');    
@@ -102,11 +103,9 @@ void handle_boot(void)
     uart_writeb(HOST_UART, 'M');
 
     // Decrypt in place
-    /*
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
-    */
+    AES_CBC_decrypt_buffer(&firmware_ctx, bootptr, size);
     
     i = 0;
 
@@ -303,10 +302,10 @@ void load_firmware(uint32_t interface, uint32_t size){
     }
 
     // encrypt again for storage on the flash
-    /*struct AES_ctx refirmware_ctx;
+    struct AES_ctx refirmware_ctx;
     AES_init_ctx_iv(&refirmware_ctx, key, iv);
     AES_CBC_encrypt_buffer(&refirmware_ctx, firmware_buffer, size);
-    */
+    
     remaining = size;
     pos = 0;
 
