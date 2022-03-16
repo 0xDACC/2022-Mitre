@@ -59,15 +59,18 @@
  *      Key:     0x00000000 : 0x0000000F (16B) 
  *      IV:      0x00000010 : 0x0000001F (16B)
  * Readback password:
- *      Pass:    0x00000020 : 0x0000002f (16B)
- * Padding:      
- *               0x0000002f : 0x00000000 (~2k)
+ *      Pass:    0x00000020 : 0x0000002F (16B)
+ * Firmware Size:      
+ *               0x0000002F : 0x00000033 (4B)
+ * Padding:
+ *               0x00000033 ->           (~2k)
  */
 
 #define EEPROM_START_PTR        ((uint32_t)0x00000000)
 #define KEY_OFFSET_PTR          ((uint32_t)EEPROM_START_PTR + 0)
 #define IV_OFFSET_PTR           ((uint32_t)EEPROM_START_PTR + 16)
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
+#define SIZE_OFFSET_PTR         ((uint32_t)EEPROM_START_PTR + 48)
 
 // Byte arrays for key and IV
 // We need the 32 bit arrys for reading from the eeprom, and the 8 bit ones for actual use
@@ -85,6 +88,7 @@ uint8_t password[16];
 void handle_boot(void)
 {
     uint32_t size = 0x00000000;
+    uint32_t sizebuf[4] = {0x00, 0x00, 0x00, 0x00};
     uint32_t i = 0;
     uint8_t *rel_msg;
 
@@ -93,9 +97,11 @@ void handle_boot(void)
 
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
-    // Sometimes the version number does not save to flash for whatever reason. Extremely frustrating.
+    // Sometimes the version number does not save to flash for whatever reason. So we read from the eeprom for it
     if(size == 0xFFFFFFFF){
-        size = 0x4000;
+        //it wants a buffer, and it wants 4 bytes, so i will just make abuffer that will be mostly empty except for the one byte we want
+        EEPROMRead(sizebuf, (uint32_t)(SIZE_OFFSET_PTR), 4);
+        size = sizebuf[0];
     }
 
     // Copy the firmware into the Boot RAM section
@@ -318,6 +324,8 @@ void load_firmware(uint32_t interface, uint32_t size){
         //error
         uart_writeb(HOST_UART, FRAME_BAD);
     }
+
+    EEPROMProgramNonBlocking(size, (uint32_t)(SIZE_OFFSET_PTR));
 
     // Write firmware to flash
     while(remaining > 0) {
