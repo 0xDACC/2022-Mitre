@@ -98,7 +98,7 @@ void handle_boot(void)
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
     // Sometimes the version number does not save to flash for whatever reason. So we read from the eeprom for it
-    if(size > 0x4000){
+    if(size == 0xFFFFFFFF){
         //it wants a buffer, and it wants 4 bytes, so i will just make abuffer that will be mostly empty except for the one byte we want
         EEPROMRead(sizebuf, (uint32_t)(SIZE_OFFSET_PTR), 4);
         size = sizebuf[0];
