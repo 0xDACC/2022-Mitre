@@ -93,6 +93,10 @@ void handle_boot(void)
 
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
+    // Sometimes the version number does not save to flash for whatever reason. Extremely frustrating.
+    if(size == 0xFFFFFFFF){
+        size = 0x4000;
+    }
 
     // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
