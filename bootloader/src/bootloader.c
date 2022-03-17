@@ -60,10 +60,8 @@
  *      IV:      0x00000010 : 0x0000001F (16B)
  * Readback password:
  *      Pass:    0x00000020 : 0x0000002F (16B)
- * Firmware Size:      
- *               0x0000002F : 0x00000033 (4B)
- * Padding:
- *               0x00000033 ->           (~2k)
+ * Padding:      
+ *               0x0000002F ->
  */
 
 #define EEPROM_START_PTR        ((uint32_t)0x00000000)
@@ -317,13 +315,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     pos = 0;
 
     // Save size
-    uint32_t sizesave = flash_write_word(size, FIRMWARE_SIZE_PTR);
-    if (sizesave != 0){
-        //error
-        uart_writeb(HOST_UART, FRAME_BAD);
-    }
-
-    EEPROMProgramNonBlocking(size, (uint32_t)(SIZE_OFFSET_PTR));
+    flash_write_word(size, FIRMWARE_SIZE_PTR);
 
     // Write firmware to flash
     while(remaining > 0) {
@@ -404,11 +396,7 @@ void handle_update(void)
 
     // Only save new version if it is not 0
     if (version != 0) {
-        flashstatus = flash_write_word(version, FIRMWARE_VERSION_PTR);
-    }
-    if (flashstatus != 0){
-        //error
-        uart_writeb(HOST_UART, FRAME_BAD);
+        flash_write_word(version, FIRMWARE_VERSION_PTR);
     }
 
     //clear page for message
