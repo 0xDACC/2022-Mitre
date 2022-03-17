@@ -88,7 +88,6 @@ uint8_t password[16];
 void handle_boot(void)
 {
     uint32_t size = 0x00000000;
-    uint32_t sizebuf[4] = {0x00, 0x00, 0x00, 0x00};
     uint32_t i = 0;
     uint8_t *rel_msg;
 
@@ -99,9 +98,8 @@ void handle_boot(void)
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
     // Sometimes the version number does not save to flash for whatever reason. So we read from the eeprom for it
     if(size == 0xFFFFFFFF){
-        //it wants a buffer, and it wants 4 bytes, so i will just make abuffer that will be mostly empty except for the one byte we want
-        EEPROMRead(sizebuf, (uint32_t)(SIZE_OFFSET_PTR), 4);
-        size = sizebuf[0];
+        //no firmware installed
+        uart_writeb(HOST_UART, FRAME_BAD);
     }
 
     // Copy the firmware into the Boot RAM section
@@ -517,11 +515,13 @@ void handle_configure(void)
         }
     }
 
+    //clear config before writing
+    flash_erase_page(CONFIGURATION_METADATA_PTR);
+
+    flash_write_word(size, CONFIGURATION_SIZE_PTR);
+
     remaining = size;
     pos = 0;
-    
-    //clear firmware metadata
-    flash_erase_page(FIRMWARE_METADATA_PTR);
 
     // Write firmware to flash
     while(remaining > 0) {
