@@ -16,6 +16,9 @@
 
 #include "driverlib/interrupt.h"
 #include "driverlib/eeprom.h"
+#include "inc/hw_types.h"
+#include "inc/hw_eeprom.h"
+#include "inc/hw_sysctl.h"
 
 #include "flash.h"
 #include "uart.h"
@@ -532,6 +535,9 @@ void handle_configure(void)
  */
 int main(void){
     // Reading key iv and password from eeprom. (needs a uint32_t pointer. )
+    HWREG(SYSCTL_RCGCEEPROM) |= SYSCTL_RCGCEEPROM_R0;
+    while (!HWREG(SYSCTL_PREEPROM));
+    EEPROMInit();
     EEPROMRead(key32, (uint32_t)KEY_OFFSET_PTR, 16);
     EEPROMRead(iv32, (uint32_t)IV_OFFSET_PTR, 16);
     EEPROMRead(password32, (uint32_t)PASSWORD_OFFSET_PTR, 16);
