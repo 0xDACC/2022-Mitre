@@ -396,9 +396,6 @@ void handle_update(void)
     if (version != 0) {
         flash_write_word(version, FIRMWARE_VERSION_PTR);
     }
-
-    //clear page for message
-    //flash_erase_page(FIRMWARE_RELEASE_MSG_PTR);
     
     //write message
     flash_write((uint32_t *)rel_msg, FIRMWARE_RELEASE_MSG_PTR, FLASH_PAGE_SIZE >> 2);
