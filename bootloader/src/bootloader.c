@@ -392,15 +392,13 @@ void handle_update(void)
     //load firmware
     load_firmware(HOST_UART, size);
 
-    int32_t flashstatus = 0;
-
     // Only save new version if it is not 0
     if (version != 0) {
         flash_write_word(version, FIRMWARE_VERSION_PTR);
     }
 
     //clear page for message
-    flash_erase_page(FIRMWARE_RELEASE_MSG_PTR);
+    //flash_erase_page(FIRMWARE_RELEASE_MSG_PTR);
     
     //write message
     flash_write((uint32_t *)rel_msg, FIRMWARE_RELEASE_MSG_PTR, FLASH_PAGE_SIZE >> 2);
