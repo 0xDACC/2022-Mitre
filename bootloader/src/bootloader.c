@@ -1,14 +1,12 @@
 /**
  * @file bootloader.c
- * @author Kyle Scaplen - Modified by Dillon Driskill
- * @brief Bootloader implementation
- * @date 2022
+ * @author 0xDACC Team (github.com/0xDACC)
+ * @brief  The secure bootloader which meets all the functional and security requirements
+ * @version 1.0
+ * @date 2022-03-20
  * 
- * This source file is part of an example system for MITRE's 2022 Embedded System CTF (eCTF).
- * This code is being provided only for educational purposes for the 2022 MITRE eCTF competition,
- * and may not meet MITRE standards for quality. Use this code at your own risk!
+ * @copyright Copyright (c) 2022
  * 
- * @copyright Copyright (c) 2022 The MITRE Corporation
  */
 
 #include <stdint.h>
@@ -16,6 +14,9 @@
 
 #include "driverlib/interrupt.h"
 #include "driverlib/eeprom.h"
+#include "inc/hw_types.h"
+#include "inc/hw_eeprom.h"
+#include "inc/hw_sysctl.h"
 
 #include "flash.h"
 #include "uart.h"
@@ -27,8 +28,8 @@
 
 /*
  * Firmware:
- *      Version: 0x0002B400 : 0x0002B404 (4B)
- *      Size:    0x0002B404 : 0x0002B408 (4B)
+ *      Size:    0x0002B400 : 0x0002B404 (4B)
+ *      Version: 0x0002B404 : 0x0002B408 (4B)
  *      Msg:     0x0002B408 : 0x0002BC00 (~2KB = 1KB + 1B + pad)
  *      Fw:      0x0002BC00 : 0x0002FC00 (16KB)
  * Configuration:
@@ -58,10 +59,6 @@
  * AES information:
  *      Key:     0x00000000 : 0x0000000F (16B) 
  *      IV:      0x00000010 : 0x0000001F (16B)
- * Readback password:
- *      Pass:    0x00000020 : 0x0000002f (16B)
- * Padding:      
- *               0x0000002f : 0x00000000 (~2k)
  */
 
 #define EEPROM_START_PTR        ((uint32_t)0x00000000)
@@ -69,12 +66,12 @@
 #define IV_OFFSET_PTR           ((uint32_t)EEPROM_START_PTR + 16)
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
-// Byte arrays for key and IV
-// We need the 32 bit arrys for reading from the eeprom, and the 8 bit ones for actual use
+// 32 bit arrays for reading from eeprom
 uint32_t key32[4];
 uint32_t iv32[4];
 uint32_t password32[4];
 
+// 8 bit arrays for use within the bootloader
 uint8_t key[16];
 uint8_t iv[16];
 uint8_t password[16];
@@ -85,34 +82,40 @@ uint8_t password[16];
 void handle_boot(void)
 {
     uint32_t size;
-    uint32_t fsize = *(uint32_t *)FIRMWARE_SIZE_PTR;
     uint32_t i = 0;
     uint8_t *rel_msg;
-    uint8_t address = (uint8_t *)FIRMWARE_STORAGE_PTR;
 
     // Acknowledge the host
-    uart_writeb(HOST_UART, 'B');
+    uart_writeb(HOST_UART, 'B');    
 
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
     
-    //fill our buffer
-    uint8_t firmwarebuffer[fsize];
-
-    for(i = 0; i < fsize; i++){
-        firmwarebuffer[i] = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+    // If the size is -1 then we know that there has not been a firmware installed
+    if(size == 0xFFFFFFFF){
+        //no firmware installed
+        uart_writeb(HOST_UART, FRAME_BAD);
     }
-
-    //decrypt
-    struct AES_ctx bootctx;
-    AES_init_ctx_iv(&bootctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmwarebuffer, key, iv);
 
     // Copy the firmware into the Boot RAM section
     for (i = 0; i < size; i++) {
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = firmwarebuffer[i];
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
+    // Decrypt
+    struct AES_ctx firmware_ctx;
+    AES_init_ctx_iv(&firmware_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
+
+    // check password
+    for(i = 0; i < 16; i++){
+        if(*((uint8_t *)(FIRMWARE_BOOT_PTR + (size-16) + i)) != password[i]){
+            // password is incorrect, so the firmware was tampered with
+            uart_writeb(HOST_UART, FRAME_BAD);
+        }
+    }
+
+    // acknowledge host
     uart_writeb(HOST_UART, 'M');
 
     // Print the release message
@@ -124,7 +127,7 @@ void handle_boot(void)
     uart_writeb(HOST_UART, '\0');
 
     // Execute the firmware
-    void (*firmware)(void) = (void (*)(void))(firmwarebuffer + 1);
+    void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR + 1);
     firmware();
 }
 
@@ -142,11 +145,13 @@ void handle_readback(void)
     // Acknowledge the host
     uart_writeb(HOST_UART, 'R');
 
+    // Read the password supplied by the host
     uart_read(HOST_UART, pbuff, 16);
 
     //Acknowledge
     uart_writeb(HOST_UART, FRAME_OK);
 
+    // Check is the password supplied is the correct one
     for(int i = 0; i < 16; i++){
         if(pbuff[i] != password[i]){
             //incorrect or invalid password
@@ -161,6 +166,7 @@ void handle_readback(void)
     // Receive region identifier
     region = (uint32_t)uart_readb(HOST_UART);
 
+    // Set base address for readback
     if (region == 'F') {
         // Set the base address for the readback
         address = (uint8_t *)FIRMWARE_STORAGE_PTR;
@@ -181,7 +187,7 @@ void handle_readback(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
 
-    // Ensuring you cant read more info than you need.
+    // We will cap the limit of the readback to exactly as big as the firmware can be
     if(region == 'F'){
         if(size > 0x4000){
             size = 0x4000;
@@ -192,66 +198,34 @@ void handle_readback(void)
         }
     }
 
-    uint32_t csize;
+    // since the firmware is encrypted we do this so we end up decrypting a little more than we will send back, but this is just how decryption works
+    uint32_t dsize = size + ((16 - (size%16))%16);
+    // buffer for the data
+    uint8_t readback_buffer[dsize];
 
-    // make sure that whatever we grab is divisible by 16 for decryption
-    if((size % 16) == 0){
-        size = size;
-    } else {
-        csize = size + (16-(size%16));
+    // Fill the buffer
+    for(int i = 0; i < dsize; i++){
+        readback_buffer[i] = address[i];
     }
 
-    uint8_t cryptobuff[csize];
-
-    //now we fill our buffer so we can decrypt it
-    for(int i = 0; i < csize; i++){
-        cryptobuff[csize] = address + i;
+    // Since the config isnt encrytped (because really we cant tell the firmware how to decrypt it) we only want to decrypt the firmware
+    if(region == 'F'){
+        // Decrypt
+        struct AES_ctx readback_ctx;
+        AES_init_ctx_iv(&readback_ctx, key, iv);
+        AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, dsize);
     }
 
-    //now decrypt
-    struct AES_ctx readbackctx;
-    AES_init_ctx_iv(&readbackctx, key, iv);
-    AES_CBC_decrypt_buffer(&readbackctx, cryptobuff, csize);    
-
-    // Read out the stuff
-    uart_write(HOST_UART, &cryptobuff, size);
+    // Read out the data
+    uart_write(HOST_UART, readback_buffer, size);
 }
-
 
 /**
- * @brief Read data from a UART interface and program to flash memory.
+ * @brief Load the firmware into flash storage
  * 
- * @param interface is the base address of the UART interface to read from.
- * @param dst is the starting page address to store the data.
- * @param size is the number of bytes to load.
+ * @param interface is the host uart to read from
+ * @param size is the ammount of bytes to read
  */
-void load_data(uint32_t interface, uint32_t dst, uint32_t size)
-{
-    int i;
-    uint32_t frame_size;
-    uint8_t page_buffer[FLASH_PAGE_SIZE];
-
-    while(size > 0) {
-        // calculate frame size
-        frame_size = size > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : size;
-        // read frame into buffer
-        uart_read(HOST_UART, page_buffer, frame_size);
-        // pad buffer if frame is smaller than the page
-        for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
-            page_buffer[i] = 0xFF;
-        }
-        // clear flash page
-        flash_erase_page(dst);
-        // write flash page
-        flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
-        // next page and decrease size
-        dst += FLASH_PAGE_SIZE;
-        size -= frame_size;
-        // send frame ok
-        uart_writeb(HOST_UART, FRAME_OK);
-    }
-}
-
 void load_firmware(uint32_t interface, uint32_t size){
     int i;
     int j;
@@ -274,7 +248,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         uart_read(HOST_UART, page_buffer, frame_size);
         // pad buffer if frame is smaller than the page
         for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
-            page_buffer[i] = 0xFF;
+            page_buffer[i] = 0x00;
         }
         // add the page buffer to the firmware buffer
         for(j = 0; j < frame_size; j++){
@@ -303,11 +277,16 @@ void load_firmware(uint32_t interface, uint32_t size){
         }
     }
 
-    //re-encrypt for storage on flash
-    AES_CBC_encrypt_buffer(&firmware_ctx, firmware_buffer, size);
-
+    // encrypt again for storage on the flash
+    struct AES_ctx refirmware_ctx;
+    AES_init_ctx_iv(&refirmware_ctx, key, iv);
+    AES_CBC_encrypt_buffer(&refirmware_ctx, firmware_buffer, size);
+    
     remaining = size;
     pos = 0;
+
+    // Save size
+    flash_write_word(size, FIRMWARE_SIZE_PTR);
 
     // Write firmware to flash
     while(remaining > 0) {
@@ -329,9 +308,8 @@ void load_firmware(uint32_t interface, uint32_t size){
  */
 void handle_update(void)
 {
-    // metadata
     int i;
-    uint8_t vbuff[32];  // 8 bits because we're going to read 1 byte at a time
+    uint8_t vbuff[32];  // 8 bit array that will hold the version for decryption
     uint32_t version = 0;
     uint32_t size = 0;
     uint32_t rel_msg_size = 0;
@@ -350,17 +328,19 @@ void handle_update(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
 
+    // get the size of the release message
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
+
     // Decrypt the version number, and put it in a 32 bit unsigned int
     struct AES_ctx version_ctx;
     AES_init_ctx_iv(&version_ctx, key, iv);
     AES_CBC_decrypt_buffer(&version_ctx, vbuff, 32);
 
-    version = vbuff[0] << 8;  //since the first byte in the buffer represents the first half of the 16 bit version number
+    // since the version can actually take up to 16 bits we need to turn the two 8 bit bytes into one larger byte
+    version = vbuff[0] << 8;
     version |= vbuff[1];
 
-    /* Now that we have decrypted the 32 byte (16 bytes of version+pad, and 16 bytes of password)
-    * Lets check if its correct */
+    // Check for password
    for(i = 0; i<16; i++){
        if (password[i] != vbuff[16+i]){
             // Version Number is not signed with the correct password
@@ -369,6 +349,7 @@ void handle_update(void)
         }
     }
 
+    // If it not an acceptable number then return and quit
     if ((version != 0) && (version < *(uint32_t *)FIRMWARE_VERSION_PTR)) {
         // Version is not acceptable
         uart_writeb(HOST_UART, FRAME_BAD);
@@ -388,12 +369,6 @@ void handle_update(void)
     if (version != 0) {
         flash_write_word(version, FIRMWARE_VERSION_PTR);
     }
-
-    // Save size
-    flash_write_word(size, FIRMWARE_SIZE_PTR);
-
-    //clear page for message
-    flash_erase_page(FIRMWARE_RELEASE_MSG_PTR);
     
     //write message
     flash_write((uint32_t *)rel_msg, FIRMWARE_RELEASE_MSG_PTR, FLASH_PAGE_SIZE >> 2);
@@ -450,7 +425,9 @@ void handle_configure(void)
     size |= (((uint32_t)uart_readb(HOST_UART)) << 8);
     size |= ((uint32_t)uart_readb(HOST_UART));
 
-    remaining = size;
+    remaining = size;   
+
+    // now that we know the size of the config we can set a buffer for it
     uint8_t config_buffer[size];
 
     // Acknowledge the host
@@ -464,12 +441,15 @@ void handle_configure(void)
         } else {
             frame_size = remaining;
         }
+
         // read frame into buffer
         uart_read(HOST_UART, config_buffer, frame_size);
+
         // pad buffer if frame is smaller than the page
         for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
             page_buffer[i] = 0xFF;
         }
+
         // add the page buffer to the config buffer
         for(j = 0; j < frame_size; j++){
             config_buffer[j + pos] = page_buffer[j];
@@ -496,13 +476,14 @@ void handle_configure(void)
         }
     }
 
-    //reencrypt for storage
-    AES_CBC_encrypt_buffer(&config_ctx, config_buffer, size);
+    //clear config before writing
+    flash_erase_page(CONFIGURATION_METADATA_PTR);
+
+    // Save size to the flash
+    flash_write_word(size, CONFIGURATION_SIZE_PTR);
 
     remaining = size;
     pos = 0;
-    //clear firmware metadata
-    flash_erase_page(FIRMWARE_METADATA_PTR);
 
     // Write firmware to flash
     while(remaining > 0) {
@@ -529,14 +510,18 @@ void handle_configure(void)
  * @return int
  */
 int main(void){
-    // Reading key iv and password from eeprom. (needs a uint32_t pointer. )
+    // Setting up the eeprom
+    HWREG(SYSCTL_RCGCEEPROM) |= SYSCTL_RCGCEEPROM_R0;
+    while (!HWREG(SYSCTL_PREEPROM));
+    EEPROMInit();
+
+    // Reading from eeprom to the 32 bit arrays
     EEPROMRead(key32, (uint32_t)KEY_OFFSET_PTR, 16);
     EEPROMRead(iv32, (uint32_t)IV_OFFSET_PTR, 16);
     EEPROMRead(password32, (uint32_t)PASSWORD_OFFSET_PTR, 16);
 
     // Convert those 4 bytes of 32 bits into 16 bytes of 8 bits
-
-    // There has to be an easier way to do this
+    // There has to be an easier way to do this LOL
     key[0] = key32[0];
     key[1] = key32[0] >> 8;
     key[2] = key32[0] >> 16;
@@ -597,13 +582,14 @@ int main(void){
     password[14] = password32[3] >> 16;
     password[15] = password32[3] >> 24;
 
-
     uint8_t cmd = 0;
-    // Memory is always initialized as 1s, so on the first startup we need to set the current version to the oldest
+
+    // Memory is always initialized as 1s, so on the first startup we need to set the current version to the oldest as defined by the host
     uint32_t current_version = *(uint32_t *)FIRMWARE_VERSION_PTR;
     if (current_version == 0xFFFFFFFF){
         flash_write_word((uint32_t)OLDEST_VERSION, FIRMWARE_VERSION_PTR);
     }
+    
     // Initialize IO components
     uart_init();
 

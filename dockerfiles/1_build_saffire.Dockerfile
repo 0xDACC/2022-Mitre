@@ -1,17 +1,13 @@
 # 2022 eCTF
 # Host-Tools and Bootloader Creation Dockerfile
-# Andrew Mirghassemi
+# 0xDACC
 #
 # (c) 2022 The MITRE Corporation
 #
-# This source file is part of an example system for MITRE's 2022 Embedded System
-# CTF (eCTF). This code is being provided only for educational purposes for the
-# 2022 MITRE eCTF competition, and may not meet MITRE standards for quality.
-# Use this code at your own risk!
+# This file now meets all functional and security requirements. Not much was changed here, just added eeprom support and adding keygen
 
 FROM ubuntu:focal
 
-# Add environment customizations here
 # NOTE: do this first so Docker can used cached containers to skip reinstalling everything
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y python3 \

@@ -1,5 +1,11 @@
-# Script to set up eeprom data for saffire to include keys and passwords
-# Team: 0xDACC
+#!/usr/bin/python3 -u
+
+# 2022 eCTF
+# EEPROM Setup tool
+# 0xDACC
+#
+# This tool is almost criminally simple. In fact it should probably be a function inside another tool
+# But I made it this way for a reason and there's no way I'm going back and messing with perfectly functional code!
 
 from pathlib import Path
 
@@ -10,8 +16,10 @@ source_eeprom = Path("/bootloader/eeprom.bin")
 
 
 def main():
-    # Write key and iv to eeprom starting at 0x00
+    # Write key and iv to eeprom in sequence
     source_eeprom.write_bytes(key + iv + password)
+
+    return 0
 
 if __name__ == "__main__":
     main()

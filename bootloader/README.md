@@ -1,57 +1,43 @@
 # SAFFIRe Bootloader
-The SAFFIRe bootloader implements the security and functionality of the
-device-side part of SAFFIRe and is one of two components your team must
-implement (the other being the host tools in `/host-tools/`). The Bootloader
-runs on a Tiva C TM4C123GH6PM microcontroller which is emulated using
-`qemu-system-arm`.
+The SAFFIRe bootloader is the heart and soul of this years challenge, and as such deserves a respectable readme! In this file we will go over each function in the bootloader in a nice neat fashion that is easy to read!
 
-The Bootloader is split into a few files that may be of interest to you,
-although you are free to change any and all files in this directory as long as
-functional and build requirements are met:
+## Firmware Update
+1. Negotiate with the host to enter update mode
+2. Read the encrypted version from the host
+3. Read the size of the firmware from the host
+4. Read the release message from the host
+5. Decrypt the version for authentication
+   *If the version or the authentication password is invalid the bootloader rejects the update*
+6. Load the firmware
+7. Decrypt the firmware for storage
+   *If the authentication password is invalid or not present then the bootloader rejects the update*
+8. Encrypt firmware again
+9. Write encrypted firmware to flash
+10. Write size to flash
+11. Write version to flash
+12. Write release message to flash
 
-* `bootloader.c`: Implements the main functionality of the SAFFIRe Bootloader.
-  It contains `main()` and handles commands from the host tools to run different
-  parts of the avionic update and boot system.
-* `uart.{c,h}`: Implements a UART interface to the host, reading and writing raw
-  bytes.
-* `flash.{c,h}`: Implements a driver for programming the Flash memory.
+## Firmware Configuration
+1. Negotiate with the host to enter configure mode
+2. Read the config size from the host
+3. Read the configuration from the host
+4. Decrypt the configuration for authentication
+   *If the authentication password is invalid or not present then the bootloader rejects the configuration*
+5. Save configuration to flash
+6. Save size to flash
 
-We have also included the Tivaware driver library for working with the
-microcontroller peripherals. You can find Tivaware in `lib/tivaware` and will
-find the following files to be of interest:
+## Readback
+Firmware readback and configuration readback are based in one function in the bootloader, and the bootloader sets the address we need to read from for either the firmware of congfiguration based on what the host tells it during the negotiation phase
 
-* `startup_gcc.c`: Implements the system startup code, including initializing
-  the stack and jumping to the `main`. There is a good chance that you will not
-  need to change `startup_gcc.c`, but some advanced designs may require it.
-* `bootloader.ld`: The linker script to set up memory regions. There is a good
-  chance that you will not need to change `bootloader.ld`, but some advanced
-  designs may require it.
-* `makedefs`: The common definitions included when compiling the Tivaware
-  library and your SAFFIRe bootloader. If you want to specific optimizations and
-  compiler options to both Tivaware and the bootloader, add/change them here.
-  Otherwise, those options can be added to `bootloader/Makefile`.
+1. Negotiate with the host to enter readback mode and determin the address to read from 
+2. Wait for the authentication password to be supplied
+   *If the incorrect password is supplied, then the readback is rejected*
+3. Send requested data over uart. The data is capped to a certain size based off if the host requests firmware or config data.
 
-## On Adding Crypto
-To aid with development, we have included Makefile rules and example code for using
-[tiny-AES-c](https://github.com/kokke/tiny-AES-c) (see line 46 of the Makefile and
-lines 21 and 207 of bootloader.c). You are free to use the library for your crypto
-or simply use build process as a template for another crypto library of your choice.
-
-If you choose to use a different crypto library, we recommend using the following
-steps to integrate it into your system. **NOTE: All added libraries must compile
-from the `all` rule of `bootloader/Makefile` to follow the functional requirements.**
-1. Find a crypto library suitable for your embedded system. **Make sure it does not
-   require any system calls or dynamic memory allocation (i.e. malloc), as the
-   bootloader runs on bare metal without an operating system**
-2. Add the library to the `bootloader/` directory either as a submodule in git or
-   as a copy of the library source code
-3. Run the included tests of the library to verify it works properly on your machine
-   before you integrate it with your code
-4. Add the directory path to the list of include paths (`IPATH+=/path/to/crypto`)
-   in `bootloader/Makefile`
-5. Add the directory path to the list of source files (`VPATH+=/path/to/crypto`)
-   in `bootloader/Makefile`
-6. Add each object file you wish to link to the LDFLAGS list
-   (`LDFLAGS+=${COMPILER}/source_file_name.o`) in `bootloader/Makefile`
-7. Add each object file you wish to link to the `all` rule 
-   (`all: ${COMPILER}/source_file_name.o`) in `bootloader/Makefile`
+## Boot
+1. Negotiate with the host to enter boot mode
+2. Copy the encrypted flash to the boot section of RAM
+3. Decrypt the boot section of ram
+   *If the authentication password is invalid or not present then the bootloader rejects the boot*
+4. Write the release message over uart
+5. Boot the firmware

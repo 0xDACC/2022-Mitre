@@ -2,14 +2,9 @@
 
 # 2022 eCTF
 # Boot Tool
-# Kyle Scaplen
+# 0xDACC
 #
-# (c) 2022 The MITRE Corporation
-#
-# This source file is part of an example system for MITRE's 2022 Embedded System
-# CTF (eCTF). This code is being provided only for educational purposes for the
-# 2022 MITRE eCTF competition, and may not meet MITRE standards for quality.
-# Use this code at your own risk!
+# This tool boots the firmware
 
 import argparse
 import logging

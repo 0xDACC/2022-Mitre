@@ -30,7 +30,7 @@ def monitor(socket_number: int, mfile: str):
     mfile = RELEASE_MESSAGES_ROOT / mfile
 
     # Print release message
-    log.info("*** Firmware Release Message ***\n")
+    log.info("*** Firmware Release Message ***")
 
     log.info(mfile.read_text(encoding="latin-1"))
 

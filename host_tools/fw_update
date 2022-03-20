@@ -2,14 +2,9 @@
 
 # 2022 eCTF
 # Update Tool
-# Kyle Scaplen
+# 0xDACC
 #
-# (c) 2022 The MITRE Corporation
-#
-# This source file is part of an example system for MITRE's 2022 Embedded System
-# CTF (eCTF). This code is being provided only for educational purposes for the
-# 2022 MITRE eCTF competition, and may not meet MITRE standards for quality.
-# Use this code at your own risk!
+# This tool meets all functional and security requirements. This tool doesn't do much special, since the functionality of updating needs to stay the same
 
 import argparse
 import json
@@ -36,7 +31,7 @@ def update_firmware(socket_number: int, firmware_file: Path):
         firmware = bytes.fromhex(data["firmware"])
         firmware_size = len(firmware)
 
-        # Truncate release message if greater than 1k to keep it in the security requirements
+        # Truncate release message if greater than 1k to stop any overflow bugs
         if len(release_msg) > 1024:
             release_msg = release_msg[0:1024]
 
