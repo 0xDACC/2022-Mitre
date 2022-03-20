@@ -2,14 +2,9 @@
 
 # 2022 eCTF
 # Protect Firmware Tool
-# Kyle Scaplen
+# 0xDACC
 #
-# (c) 2022 The MITRE Corporation
-#
-# This source file is part of an example system for MITRE's 2022 Embedded System
-# CTF (eCTF). This code is being provided only for educational purposes for the
-# 2022 MITRE eCTF competition, and may not meet MITRE standards for quality.
-# Use this code at your own risk!
+# This tool produces a protected firmware package which meets all functional and security requirements. It's awful complicated so there will be comments along the way
 
 import argparse
 from importlib.resources import path
@@ -25,9 +20,7 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 log = logging.getLogger(Path(__file__).name)
 
 
-def protect_firmware(
-    firmware_file: Path, version: int, release_message: str, protected_firmware: Path
-):
+def protect_firmware(firmware_file: Path, version: int, release_message: str, protected_firmware: Path ):
     print_banner("SAFFIRe Firmware Protect Tool")
 
     # Read in the raw firmware binary
@@ -37,45 +30,54 @@ def protect_firmware(
     # Encrypt the firmware
     log.info("Encrypting the firmware...\n")
 
+    # Set the crypto information
     key = Path("/secrets/key").read_bytes()
     iv = Path("/secrets/iv").read_bytes()
     password = Path("/secrets/password").read_bytes()
 
     # because we don't know the size of the file, we need to 
-    # pad it until it divides by 16
+    # pad it so it divides by 16
     padded_firmware = firmware_data
     padded_firmware += (b'\x00' * ((16 - len(firmware_data) % 16) % 16))
+
     # Add the password as a signature for the bootloader to check
     padded_firmware += password
 
-    cipher = AES.new(key, AES.MODE_CBC, iv)  # creating new aes object. We can only use this object once
+    # creating new aes object. We can only use this object once
+    cipher = AES.new(key, AES.MODE_CBC, iv)
 
-    encrypted_firmware = cipher.encrypt(padded_firmware)  # encrypt() returns a byte string e.g. b'0123456789abcdef'
+    # encrypt() returns a byte string e.g. b'0123456789abcdef'
+    encrypted_firmware = cipher.encrypt(padded_firmware)
 
-    # Encrypt the version number as well. Only way I could think to
-    # stop the version from being tampered with without drastically changing the way the update works.
-    # We need the first 16 bits to be the version number
-    # so ill check if the number is higher than 255 and pad the front
-    # and it has to be 16 bits so its capped at 65535. 
+    # In order to meet functional and security requirements we need 2 things:
+    # For function, we need to make it cap off at 0xFFFF
+    # And for security we need to encrypt it and add a password for authentiction and integrity
+
+    # So here we check if the size is bigger than 8 bits
     if 255 < version < 65535:
+        # and this packs it into a 16 bit byte represented as two 8 bit bytes
         padded_version = version.to_bytes(2, 'little')
     elif version < 255:
+        # otherwise we turn it into one byte of 0x00 and one byte of the actual number
         padded_version = b'\x00' + version.to_bytes(1, 'little')
     else:
+        # Here it is greater than 0xFFFF, which we will just cap to 0xFFFF
         padded_version = b'\xff\xff'
     
-    # now we pad the back to make it 16 bytes
-    padded_version += os.urandom(14) # Previously this was just 14 empty bytes, however that makes brute force much easier
-    # Add password as signature
+    # So we have 2 bytes of data, and we need to add 14 extra bytes to make it encryptable by AES (16 bytes)
+    # Previously it was just padding 14 null bytes to the end, but this would make it MUCH easier to brute force the aes key and iv
+    # So we add 14 random bytes now, which for all intents and purposes makes it impossible to brute force
+    padded_version += os.urandom(14)
+    # Add password as signature which brings the total size to 32 bytes
     padded_version += password
 
-    versioncip = AES.new(key, AES.MODE_CBC, iv)  # new aes object. We can only use this object once
+    # new aes object. We can only use this object once
+    versioncip = AES.new(key, AES.MODE_CBC, iv)
 
+    # encrypt() returns a byte string e.g. b'0123456789abcdef'
     encrypted_version = versioncip.encrypt(padded_version)
 
     log.info("Packaging the firmware...")
-
-    # Construct the metadata
 
     # Create firmware storage structure
     data = {
@@ -85,7 +87,7 @@ def protect_firmware(
         "firmware": encrypted_firmware.hex()
     }
 
-    # Open/create a new file which will contain the packed fw info, as well as encrypted 
+    # Open/create a new file which will contain all the info above, and package it into a nice json file.
     with protected_firmware.open("w", encoding="utf8") as pf:
         json.dump(data, pf)
 

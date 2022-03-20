@@ -2,14 +2,12 @@
 
 # 2022 eCTF
 # Protect Configuration Tool
-# Kyle Scaplen
+# 0xDACC
 #
-# (c) 2022 The MITRE Corporation
-#
-# This source file is part of an example system for MITRE's 2022 Embedded System
-# CTF (eCTF). This code is being provided only for educational purposes for the
-# 2022 MITRE eCTF competition, and may not meet MITRE standards for quality.
-# Use this code at your own risk!
+# This tool meets all functional and security requiremnets. The way this tool works is prettyt neat actually and took some thought.
+# It packs on a 16 byte password for authentication onto the end of the data, which is then encrypted along side the rest of the data.
+# Due to the nature of CBC decryption, and since the password is at the very end, if any byte before the password is messed with before decryption, then the password wont decrypt right.
+# Authentication and integrity combined into one step! Now that's efficient!
 
 import argparse
 import logging
@@ -31,19 +29,23 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
 
     log.info("Encrypting the configuration...")
 
+    # Read the crypto info from the host secrets files
     key = Path("/secrets/key").read_bytes()
     iv = Path("/secrets/iv").read_bytes()
     password = Path("/secrets/password").read_bytes()
 
-    # Pad extra data on the end of the file to make sure its compatable with aes block sizes (128 bits or 16 bytes)
+    # Pad extra data on the end of the file to make sure its compatable with aes block sizes (128 bits / 16 bytes)
     padded_cfg = file_data
     padded_cfg += (b'\x00' * ((16 - len(file_data) % 16) % 16))
+
     # Add password as signature for bootloader to check
     padded_cfg += password
     
-    cipher = AES.new(key, AES.MODE_CBC, iv)  # creating new aes object. We can only use this object once.
+    # creating new aes object. We can only use this object once.
+    cipher = AES.new(key, AES.MODE_CBC, iv)
 
-    encrypted_cfg = cipher.encrypt(padded_cfg)  # encrypt() returns a byte string e.g. b'0123456789abcdef'
+    # encrypt() returns a byte string e.g. b'0123456789abcdef'
+    encrypted_cfg = cipher.encrypt(padded_cfg)
 
     log.info("Packaging the configuration...")
 

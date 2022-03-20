@@ -1,6 +1,11 @@
-# Keygen script for saffire
-# Team: 0xDACC
-# Author: Dillon Driskill and Matthew Weikel
+#!/usr/bin/python3 -u
+
+# 2022 eCTF
+# Update Tool
+# 0xDACC
+#
+# Yet another criminally simple script that should be a function! Oh well! It's cute isnt it?
+# All it does is create the crypto keys and authentication password.
 
 import os
 from pathlib import Path
@@ -9,6 +14,7 @@ def main():
 
     # Generate 128 bit (16 byte) key
     key = Path("/secrets/key")
+    # I've checked and os.urandom is about as random as it gets. most modern processors have an actual hardware randomness generator which is pretty cool if you ask me
     key.write_bytes(os.urandom(16))
 
     # Generate 128 bit (16 byte) iv
