@@ -139,6 +139,7 @@ void handle_readback(void)
 {
     uint8_t region;
     uint8_t *address;
+    uint32_t fsize = 0;
     uint32_t size = 0;
     uint8_t pbuff[16];
     
@@ -169,15 +170,18 @@ void handle_readback(void)
     // Set base address for readback
     if (region == 'F') {
         // Set the base address for the readback
+        fsize = *((uint32_t *)FIRMWARE_SIZE_PTR)-16;
         address = (uint8_t *)FIRMWARE_STORAGE_PTR;
         // Acknowledge the host
         uart_writeb(HOST_UART, 'F');
     } else if (region == 'C') {
         // Set the base address for the readback
+        fsize = *((uint32_t *)CONFIGURATION_SIZE_PTR)-16;
         address = (uint8_t *)CONFIGURATION_STORAGE_PTR;
         // Acknowledge the hose
         uart_writeb(HOST_UART, 'C');
     } else {
+        uart_writeb(HOST_UART, 'Q');
         return;
     }
 
@@ -190,22 +194,20 @@ void handle_readback(void)
     // We will cap the limit of the readback to exactly as big as the firmware that was installed
     // We limit it to 16 less though, so we dont see the password in plain text
     if(region == 'F'){
-        if(size >= *((uint32_t *)FIRMWARE_SIZE_PTR) - 16){
-            size = *((uint32_t *)FIRMWARE_SIZE_PTR) - 16;
+        if(size >= *((uint32_t *)FIRMWARE_SIZE_PTR)){
+            size = *((uint32_t *)FIRMWARE_SIZE_PTR);
         }
     } else {
-        if(size >= *((uint32_t *)CONFIGURATION_SIZE_PTR) - 16){
-            size = *((uint32_t *)CONFIGURATION_SIZE_PTR) - 16;
+        if(size >= *((uint32_t *)CONFIGURATION_SIZE_PTR)){
+            size = *((uint32_t *)CONFIGURATION_SIZE_PTR);
         }
     }
 
-    // since the firmware is encrypted we do this so we end up decrypting a little more than we will send back, but this is just how decryption works
-    uint32_t dsize = size + ((16 - (size%16))%16);
     // buffer for the data
-    uint8_t readback_buffer[dsize];
+    uint8_t readback_buffer[fsize];
 
     // Fill the buffer
-    for(int i = 0; i < dsize; i++){
+    for(int i = 0; i < fsize; i++){
         readback_buffer[i] = address[i];
     }
 
@@ -214,7 +216,7 @@ void handle_readback(void)
         // Decrypt
         struct AES_ctx readback_ctx;
         AES_init_ctx_iv(&readback_ctx, key, iv);
-        AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, dsize);
+        AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, fsize);
     }
 
     // Read out the data
