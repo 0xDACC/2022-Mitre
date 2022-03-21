@@ -187,14 +187,15 @@ void handle_readback(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
 
-    // We will cap the limit of the readback to exactly as big as the firmware can be
+    // We will cap the limit of the readback to exactly as big as the firmware that was installed
+    // We limit it to 16 less though, so we dont see the password in plain text
     if(region == 'F'){
-        if(size > 0x4000){
-            size = 0x4000;
+        if(size >= *((uint32_t *)FIRMWARE_SIZE_PTR) - 16){
+            size = *((uint32_t *)FIRMWARE_SIZE_PTR) - 16;
         }
     } else {
-        if(size > 0xFFFF){
-            size = 0xFFFF;
+        if(size >= *((uint32_t *)CONFIGURATION_SIZE_PTR) - 16){
+            size = *((uint32_t *)CONFIGURATION_SIZE_PTR) - 16;
         }
     }
 
