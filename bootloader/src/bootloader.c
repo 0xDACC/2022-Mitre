@@ -191,8 +191,16 @@ void handle_readback(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
 
+    // setting buffer to whatever is bigger so we dont see memory we dont need to see
+    uint32_t buffsize = 0;
+    if(size > fsize){
+        buffsize = size;
+    } else {
+        buffsize = fsize;
+    }
+
     // buffer for the data
-    uint8_t readback_buffer[fsize];
+    uint8_t readback_buffer[buffsize];
 
     // Fill the buffer
     for(int i = 0; i < fsize; i++){
