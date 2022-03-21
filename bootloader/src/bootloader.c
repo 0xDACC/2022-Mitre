@@ -139,6 +139,7 @@ void handle_readback(void)
 {
     uint8_t region;
     uint8_t *address;
+    uint32_t rsize = 0;
     uint32_t size = 0;
     uint8_t pbuff[16];
     
@@ -182,19 +183,19 @@ void handle_readback(void)
     }
 
     // Receive the size to send back to the host
-    size = ((uint32_t)uart_readb(HOST_UART)) << 24;
-    size |= ((uint32_t)uart_readb(HOST_UART)) << 16;
-    size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
-    size |= (uint32_t)uart_readb(HOST_UART);
+    rsize = ((uint32_t)uart_readb(HOST_UART)) << 24;
+    rsize |= ((uint32_t)uart_readb(HOST_UART)) << 16;
+    rsize |= ((uint32_t)uart_readb(HOST_UART)) << 8;
+    rsize |= (uint32_t)uart_readb(HOST_UART);
 
     // We will cap the limit of the readback to exactly as big as the firmware that was installed
     // We limit it to 16 less though, so we dont see the password in plain text
     if(region == 'F'){
-        if(size >= *((uint32_t *)FIRMWARE_SIZE_PTR) - 16){
+        if(rsize >= *((uint32_t *)FIRMWARE_SIZE_PTR) - 16){
             size = *((uint32_t *)FIRMWARE_SIZE_PTR) - 16;
         }
     } else {
-        if(size >= *((uint32_t *)CONFIGURATION_SIZE_PTR) - 16){
+        if(rsize >= *((uint32_t *)CONFIGURATION_SIZE_PTR) - 16){
             size = *((uint32_t *)CONFIGURATION_SIZE_PTR) - 16;
         }
     }
@@ -205,7 +206,7 @@ void handle_readback(void)
     uint8_t readback_buffer[dsize];
 
     // Fill the buffer
-    for(int i = 0; i < dsize; i++){
+    for(int i = 0; i < size; i++){
         readback_buffer[i] = address[i];
     }
 
@@ -214,11 +215,15 @@ void handle_readback(void)
         // Decrypt
         struct AES_ctx readback_ctx;
         AES_init_ctx_iv(&readback_ctx, key, iv);
-        AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, dsize);
+        AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, rsize);
+    }
+
+    for(int i = size; i < 16; i++){
+        readback_buffer[i] = 0xFF;
     }
 
     // Read out the data
-    uart_write(HOST_UART, readback_buffer, size);
+    uart_write(HOST_UART, readback_buffer, rsize);
 }
 
 /**
