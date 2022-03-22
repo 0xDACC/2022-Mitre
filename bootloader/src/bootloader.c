@@ -221,7 +221,7 @@ void handle_readback(void)
     }
 
     // Read out the data
-    uart_write(HOST_UART, readback_buffer, size);
+    uart_write(HOST_UART, readback_buffer, size+1);
 }
 
 /**
