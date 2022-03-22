@@ -203,8 +203,13 @@ void handle_readback(void)
     uint8_t readback_buffer[buffsize];
 
     // Fill the buffer
-    for(int i = 0; i < fsize-16; i++){
-        readback_buffer[i] = address[i];
+    for(int i = 0; i < buffsize; i++){
+        if(i < fsize-16){
+            readback_buffer[i] = address[i];
+        } else {
+            readback_buffer[i] = 0x00;
+        }
+        
     }
 
     // Since the config isnt encrytped (because really we cant tell the firmware how to decrypt it) we only want to decrypt the firmware
@@ -212,7 +217,7 @@ void handle_readback(void)
         // Decrypt
         struct AES_ctx readback_ctx;
         AES_init_ctx_iv(&readback_ctx, key, iv);
-        AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, fsize);
+        AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, fsize-16);
     }
 
     // Read out the data
