@@ -170,13 +170,13 @@ void handle_readback(void)
     // Set base address for readback
     if (region == 'F') {
         // Set the base address for the readback
-        fsize = *((uint32_t *)FIRMWARE_SIZE_PTR)-16;
+        fsize = *((uint32_t *)FIRMWARE_SIZE_PTR);
         address = (uint8_t *)FIRMWARE_STORAGE_PTR;
         // Acknowledge the host
         uart_writeb(HOST_UART, 'F');
     } else if (region == 'C') {
         // Set the base address for the readback
-        fsize = *((uint32_t *)CONFIGURATION_SIZE_PTR)-16;
+        fsize = *((uint32_t *)CONFIGURATION_SIZE_PTR);
         address = (uint8_t *)CONFIGURATION_STORAGE_PTR;
         // Acknowledge the hose
         uart_writeb(HOST_UART, 'C');
@@ -203,7 +203,7 @@ void handle_readback(void)
     uint8_t readback_buffer[buffsize];
 
     // Fill the buffer
-    for(int i = 0; i < fsize; i++){
+    for(int i = 0; i < fsize-16; i++){
         readback_buffer[i] = address[i];
     }
 
