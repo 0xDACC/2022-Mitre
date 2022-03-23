@@ -191,6 +191,12 @@ void handle_readback(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
 
+    if(region == 'C'){
+        // Read out the data
+        uart_write(HOST_UART, address, size);
+        return;
+    }
+
     // setting buffer to whatever is bigger so we dont see memory we dont need to see
     uint32_t buffsize = 0;
     if(size > fsize){
