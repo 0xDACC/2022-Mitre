@@ -207,7 +207,7 @@ void handle_readback(void)
         if(i < fsize-16){
             readback_buffer[i] = address[i];
         } else {
-            readback_buffer[i] = 0x00;
+            readback_buffer[i] = 0xFF;
         }
         
     }

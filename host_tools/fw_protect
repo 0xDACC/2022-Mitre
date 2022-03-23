@@ -38,7 +38,7 @@ def protect_firmware(firmware_file: Path, version: int, release_message: str, pr
     # because we don't know the size of the file, we need to 
     # pad it so it divides by 16
     padded_firmware = firmware_data
-    padded_firmware += (b'\x00' * ((16 - len(firmware_data) % 16) % 16))
+    padded_firmware += (b'\xFF' * ((16 - len(firmware_data) % 16) % 16))
 
     # Add the password as a signature for the bootloader to check
     padded_firmware += password
