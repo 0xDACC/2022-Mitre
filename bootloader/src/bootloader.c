@@ -244,7 +244,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     uint32_t dst = FIRMWARE_STORAGE_PTR;
     uint8_t firmware_buffer[size];
     uint32_t pos = 0;
-    uint32_t remaining = size;
+    int32_t remaining = size;
 
     // Fill the firmware buffer
     while(remaining > 0) {
@@ -424,7 +424,7 @@ void handle_configure(void)
     uint8_t page_buffer[FLASH_PAGE_SIZE];
     uint32_t dst = CONFIGURATION_STORAGE_PTR;
     uint32_t pos = 0;
-    uint32_t remaining;
+    int32_t remaining;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
