@@ -453,7 +453,7 @@ void handle_configure(void)
         }
 
         // read frame into buffer
-        uart_read(HOST_UART, config_buffer, frame_size);
+        uart_read(HOST_UART, page_buffer, frame_size);
 
         // pad buffer if frame is smaller than the page
         for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
