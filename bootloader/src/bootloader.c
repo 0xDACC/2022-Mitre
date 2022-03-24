@@ -249,11 +249,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     // Fill the firmware buffer
     while(remaining > 0) {
         // calculate frame size
-        if(remaining >= FLASH_PAGE_SIZE){
-            frame_size = FLASH_PAGE_SIZE;
-        } else {
-            frame_size = remaining;
-        }
+        frame_size = size > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : size;
         // read frame into buffer
         uart_read(HOST_UART, page_buffer, frame_size);
         // pad buffer if frame is smaller than the page
@@ -446,11 +442,7 @@ void handle_configure(void)
     // Fill the firmware buffer
     while(remaining > 0) {
         // calculate frame size
-        if(remaining >= FLASH_PAGE_SIZE){
-            frame_size = FLASH_PAGE_SIZE;
-        } else {
-            frame_size = remaining;
-        }
+        frame_size = size > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : size;
         // read frame into buffer
         uart_read(HOST_UART, page_buffer, frame_size);
         // pad buffer if frame is smaller than the page
