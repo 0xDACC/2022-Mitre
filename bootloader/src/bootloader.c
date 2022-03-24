@@ -247,7 +247,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     int32_t remaining = size;
 
     // Fill the firmware buffer
-    while(remaining > 0) {
+    while(remaining >= 0) {
         // calculate frame size
         if(remaining >= FLASH_PAGE_SIZE){
             frame_size = FLASH_PAGE_SIZE;
@@ -444,7 +444,7 @@ void handle_configure(void)
     uart_writeb(HOST_UART, FRAME_OK);
 
     // Fill the firmware buffer
-    while(remaining > 0) {
+    while(remaining >= 0) {
         // calculate frame size
         if(remaining >= FLASH_PAGE_SIZE){
             frame_size = FLASH_PAGE_SIZE;
