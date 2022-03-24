@@ -305,7 +305,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write(firmware_buffer + pos, dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t)firmware_buffer[pos], dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
@@ -499,7 +499,7 @@ void handle_configure(void)
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write(config_buffer + pos, dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t)config_buffer[pos], dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
