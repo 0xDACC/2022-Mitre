@@ -444,7 +444,7 @@ void handle_configure(void)
         // calculate frame size
         frame_size = size > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : size;
         // read frame into buffer
-        for(i =0, i < frame_size, i++){
+        for(i =0; i < frame_size; i++){
             page_buffer[i] = uart_readb(HOST_UART);
         }
         // pad buffer if frame is smaller than the page
@@ -493,7 +493,7 @@ void handle_configure(void)
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t)&config_buffer[pos], dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t* )&config_buffer[pos], dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
