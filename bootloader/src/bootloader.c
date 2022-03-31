@@ -413,6 +413,8 @@ void handle_update(void)
 
 /**
  * @brief Load configuration data.
+ * 
+ * We repurpose the firmware boot pointer as a buffer for holding the loading data, as it tries to allocate invalid memory addresses automatically
  */
 void handle_configure(void)
 {
@@ -436,9 +438,6 @@ void handle_configure(void)
 
     remaining = size;   
 
-    // now that we know the size of the config we can set a buffer for it
-    uint8_t config_buffer[size];
-
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
 
@@ -454,7 +453,7 @@ void handle_configure(void)
         }
         // add the page buffer to the config buffer
         for(j = 0; j < frame_size; j++){
-            config_buffer[j + pos] = page_buffer[j];
+            *((uint8_t *)(FIRMWARE_BOOT_PTR + j + pos)) = page_buffer[j];
         }
         pos += FLASH_PAGE_SIZE;
         remaining -= frame_size;
@@ -467,11 +466,11 @@ void handle_configure(void)
     // Decrypt
     struct AES_ctx config_ctx;
     AES_init_ctx_iv(&config_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&config_ctx, config_buffer, size);
+    AES_CBC_decrypt_buffer(&config_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
 
     // Check signature
     for(i = 0; i < 16; i++){
-        if(password[i] != config_buffer[((size)-16)+i]){
+        if(password[i] != *((uint8_t *)(FIRMWARE_BOOT_PTR + ((size)-16) +i ))){
             // Firmware is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
@@ -494,7 +493,7 @@ void handle_configure(void)
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t *)&config_buffer[pos], dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)(FIRMWARE_BOOT_PTR + pos), dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
