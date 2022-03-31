@@ -134,6 +134,8 @@ void handle_boot(void)
 
 /**
  * @brief Send the firmware data over the host interface.
+ * 
+ * again using the firmware boot ptr as a buffer location
  */
 void handle_readback(void)
 {
@@ -211,7 +213,7 @@ void handle_readback(void)
     // Fill the buffer
     for(int i = 0; i < buffsize; i++){
         if(i < fsize-16){
-            readback_buffer[i] = address[i];
+            *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = address[i];
         } else {
             readback_buffer[i] = 0xFF;
         }
@@ -223,11 +225,11 @@ void handle_readback(void)
         // Decrypt
         struct AES_ctx readback_ctx;
         AES_init_ctx_iv(&readback_ctx, key, iv);
-        AES_CBC_decrypt_buffer(&readback_ctx, readback_buffer, fsize-16);
+        AES_CBC_decrypt_buffer(&readback_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), fsize-16);
     }
 
     // Read out the data
-    uart_write(HOST_UART, readback_buffer, size);
+    uart_write(HOST_UART, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
 }
 
 /**
