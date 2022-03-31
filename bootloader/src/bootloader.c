@@ -271,7 +271,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     // Decrypt
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, *((uint8_t *)(FIRMWARE_BOOT_PTR)), size);
+    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
 
     // Check signature
     for(i = 0; i < 16; i++){
@@ -285,7 +285,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     // encrypt again for storage on the flash
     struct AES_ctx refirmware_ctx;
     AES_init_ctx_iv(&refirmware_ctx, key, iv);
-    AES_CBC_encrypt_buffer(&refirmware_ctx, *((uint8_t *)(FIRMWARE_BOOT_PTR)), size);
+    AES_CBC_encrypt_buffer(&refirmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
     
     remaining = size;
     pos = 0;
