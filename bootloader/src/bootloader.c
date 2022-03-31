@@ -251,7 +251,10 @@ void load_firmware(uint32_t interface, uint32_t size){
         // calculate frame size
         frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
         // read frame into buffer
-        uart_read(HOST_UART, page_buffer, frame_size);
+        for(i = 0; i < frame_size; i++){
+            page_buffer[i] = (uint8_t)uart_readb(interface);
+        }
+        //uart_read(HOST_UART, page_buffer, frame_size);
         // pad buffer if frame is smaller than the page
         for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
             page_buffer[i] = 0xFF;
