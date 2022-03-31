@@ -215,7 +215,7 @@ void handle_readback(void)
         if(i < fsize-16){
             *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = address[i];
         } else {
-            readback_buffer[i] = 0xFF;
+            *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = 0xFF;
         }
         
     }
