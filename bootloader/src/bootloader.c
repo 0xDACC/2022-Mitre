@@ -242,7 +242,6 @@ void load_firmware(uint32_t interface, uint32_t size){
     uint32_t frame_size;
     uint8_t page_buffer[FLASH_PAGE_SIZE];
     uint32_t dst = FIRMWARE_STORAGE_PTR;
-    uint8_t firmware_buffer[size];
     uint32_t pos = 0;
     int32_t remaining = size;
 
@@ -258,7 +257,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         }
         // add the page buffer to the firmware buffer
         for(j = 0; j < frame_size; j++){
-            firmware_buffer[j + pos] = page_buffer[j];
+            *((uint8_t *)(FIRMWARE_BOOT_PTR + j + pos)) = page_buffer[j];
         }
         pos += FLASH_PAGE_SIZE;
         remaining -= frame_size;
@@ -272,11 +271,11 @@ void load_firmware(uint32_t interface, uint32_t size){
     // Decrypt
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, firmware_buffer, size);
+    AES_CBC_decrypt_buffer(&firmware_ctx, *((uint8_t *)(FIRMWARE_BOOT_PTR)), size);
 
     // Check signature
     for(i = 0; i < 16; i++){
-        if(password[i] != firmware_buffer[((size)-16)+i]){
+        if(password[i] != *((uint8_t *)(FIRMWARE_BOOT_PTR + ((size)-16) +i ))){
             // Firmware is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
@@ -286,7 +285,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     // encrypt again for storage on the flash
     struct AES_ctx refirmware_ctx;
     AES_init_ctx_iv(&refirmware_ctx, key, iv);
-    AES_CBC_encrypt_buffer(&refirmware_ctx, firmware_buffer, size);
+    AES_CBC_encrypt_buffer(&refirmware_ctx, *((uint8_t *)(FIRMWARE_BOOT_PTR)), size);
     
     remaining = size;
     pos = 0;
@@ -301,7 +300,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t *)&firmware_buffer[pos], dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)(FIRMWARE_BOOT_PTR + pos), dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
