@@ -242,7 +242,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     uint32_t frame_size;
     uint8_t page_buffer[FLASH_PAGE_SIZE];
     uint32_t dst = FIRMWARE_STORAGE_PTR;
-    uint32_t *firmware_buffer = 0x20000000;
+    uint8_t firmware_buffer[size];
     uint32_t pos = 0;
     int32_t remaining = size;
 
@@ -272,7 +272,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     // Decrypt
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)firmware_buffer, size);
+    AES_CBC_decrypt_buffer(&firmware_ctx, firmware_buffer, size);
 
     // Check signature
     for(i = 0; i < 16; i++){
@@ -286,7 +286,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     // encrypt again for storage on the flash
     struct AES_ctx refirmware_ctx;
     AES_init_ctx_iv(&refirmware_ctx, key, iv);
-    AES_CBC_encrypt_buffer(&refirmware_ctx, (uint8_t *)firmware_buffer, size);
+    AES_CBC_encrypt_buffer(&refirmware_ctx, firmware_buffer, size);
     
     remaining = size;
     pos = 0;
