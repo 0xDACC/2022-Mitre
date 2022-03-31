@@ -235,6 +235,10 @@ void handle_readback(void)
  * 
  * @param interface is the host uart to read from
  * @param size is the ammount of bytes to read
+ * 
+ * You'll notice that instead of using a buffer like we probably should, we use a pointer to the firmware boot location.
+ * This is because memory AFTER this address is not going to be used by the bootloader. We previously used a buffer with an automatically allocated address, but this caused errors for some reason.
+ * So we explicitly state the location for the firmware buffer, and the easiest location to use was just the firmware boot ptr
  */
 void load_firmware(uint32_t interface, uint32_t size){
     int i;
