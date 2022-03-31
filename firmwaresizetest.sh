@@ -8,10 +8,11 @@ echo " ---------------
 
 python3 tools/run_saffire.py fw-protect --emulated --sysname dillon --fw-root firmware/ --raw-fw-file 1k.bin --protected-fw-file example_fw.prot --fw-version 4 --fw-message 'version 4'
 
-
 python3 tools/run_saffire.py kill-system --emulated --sysname dillon
 
 python3 tools/run_saffire.py launch-bootloader --emulated  --sysname dillon --sock-root socks/ --uart-sock 1234
+
+python3 tools/run_saffire.py fw-update --emulated --sysname dillon --fw-root firmware/ --uart-sock 1234 --protected-fw-file example_fw.prot
 
 echo " ---------------"
 echo "|RUNNING 2K TEST|
@@ -19,10 +20,11 @@ echo " ---------------
 
 python3 tools/run_saffire.py fw-protect --emulated --sysname dillon --fw-root firmware/ --raw-fw-file 2k.bin --protected-fw-file example_fw.prot --fw-version 4 --fw-message 'version 4'
 
-
 python3 tools/run_saffire.py kill-system --emulated --sysname dillon
 
 python3 tools/run_saffire.py launch-bootloader --emulated  --sysname dillon --sock-root socks/ --uart-sock 1234
+
+python3 tools/run_saffire.py fw-update --emulated --sysname dillon --fw-root firmware/ --uart-sock 1234 --protected-fw-file example_fw.prot
 
 echo " ---------------"
 echo "|RUNNING 3K TEST|
@@ -35,6 +37,8 @@ python3 tools/run_saffire.py kill-system --emulated --sysname dillon
 
 python3 tools/run_saffire.py launch-bootloader --emulated  --sysname dillon --sock-root socks/ --uart-sock 1234
 
+python3 tools/run_saffire.py fw-update --emulated --sysname dillon --fw-root firmware/ --uart-sock 1234 --protected-fw-file example_fw.prot
+
 echo " ---------------"
 echo "|RUNNING 4K TEST|
 echo " ---------------
@@ -45,6 +49,8 @@ python3 tools/run_saffire.py fw-protect --emulated --sysname dillon --fw-root fi
 python3 tools/run_saffire.py kill-system --emulated --sysname dillon
 
 python3 tools/run_saffire.py launch-bootloader --emulated  --sysname dillon --sock-root socks/ --uart-sock 1234
+
+python3 tools/run_saffire.py fw-update --emulated --sysname dillon --fw-root firmware/ --uart-sock 1234 --protected-fw-file example_fw.prot
 
 echo " ---------------"
 echo "|RUNNING 5K TEST|
@@ -57,6 +63,8 @@ python3 tools/run_saffire.py kill-system --emulated --sysname dillon
 
 python3 tools/run_saffire.py launch-bootloader --emulated  --sysname dillon --sock-root socks/ --uart-sock 1234
 
+python3 tools/run_saffire.py fw-update --emulated --sysname dillon --fw-root firmware/ --uart-sock 1234 --protected-fw-file example_fw.prot
+
 echo " ---------------"
 echo "|RUNNING 6K TEST|
 echo " ---------------
@@ -67,6 +75,8 @@ python3 tools/run_saffire.py fw-protect --emulated --sysname dillon --fw-root fi
 python3 tools/run_saffire.py kill-system --emulated --sysname dillon
 
 python3 tools/run_saffire.py launch-bootloader --emulated  --sysname dillon --sock-root socks/ --uart-sock 1234
+
+python3 tools/run_saffire.py fw-update --emulated --sysname dillon --fw-root firmware/ --uart-sock 1234 --protected-fw-file example_fw.prot
 
 echo " ---------------"
 echo "|RUNNING 7K TEST|
@@ -79,22 +89,32 @@ python3 tools/run_saffire.py kill-system --emulated --sysname dillon
 
 python3 tools/run_saffire.py launch-bootloader --emulated  --sysname dillon --sock-root socks/ --uart-sock 1234
 
+python3 tools/run_saffire.py fw-update --emulated --sysname dillon --fw-root firmware/ --uart-sock 1234 --protected-fw-file example_fw.prot
+
 echo " ---------------"
 echo "|RUNNING 8K TEST|
 echo " ---------------
 
-python3 tools/run_saffire.py fw-protect --emulated --sysname dillon --fw-root firmware/ --raw-fw-file81k.bin --protected-fw-file example_fw.prot --fw-version 4 --fw-message 'version 4'
+python3 tools/run_saffire.py fw-protect --emulated --sysname dillon --fw-root firmware/ --raw-fw-file 8k.bin --protected-fw-file example_fw.prot --fw-version 4 --fw-message 'version 4'
 
 
 python3 tools/run_saffire.py kill-system --emulated --sysname dillon
 
 python3 tools/run_saffire.py launch-bootloader --emulated  --sysname dillon --sock-root socks/ --uart-sock 1234
 
+python3 tools/run_saffire.py fw-update --emulated --sysname dillon --fw-root firmware/ --uart-sock 1234 --protected-fw-file example_fw.prot
+
 echo " ---------------"
 echo "|RUNNING 9K TEST|
 echo " ---------------
 
 python3 tools/run_saffire.py fw-protect --emulated --sysname dillon --fw-root firmware/ --raw-fw-file 9k.bin --protected-fw-file example_fw.prot --fw-version 4 --fw-message 'version 4'
+
+python3 tools/run_saffire.py kill-system --emulated --sysname dillon
+
+python3 tools/run_saffire.py launch-bootloader --emulated  --sysname dillon --sock-root socks/ --uart-sock 1234
+
+python3 tools/run_saffire.py fw-update --emulated --sysname dillon --fw-root firmware/ --uart-sock 1234 --protected-fw-file example_fw.prot
 
 echo " --------------"
 echo "| PASSED TESTS |"
