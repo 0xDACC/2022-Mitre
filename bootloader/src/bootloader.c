@@ -208,7 +208,7 @@ void handle_readback(void)
     }
 
     // buffer for the data
-    uint8_t readback_buffer[buffsize];
+    //uint8_t readback_buffer[buffsize];
 
     // Fill the buffer
     for(int i = 0; i < buffsize; i++){
