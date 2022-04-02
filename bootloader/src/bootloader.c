@@ -227,7 +227,7 @@ void handle_readback(void)
         if(i < fsize-16){
             *((uint8_t *)(EXT_RAM_START_PTR + i)) = address[i];
         } else {
-            *((uint8_t *)(EX_TRAM_START_PTR + i)) = 0xFF;
+            *((uint8_t *)(EXT_RAM_START_PTR + i)) = 0xFF;
         }
         
     }
