@@ -76,7 +76,7 @@
 
 #define CODE_START_PTR             ((uint32_t)0x00000000) 
 #define SRAM_START_PTR             ((uint32_t)0x20000000)
-#define EXT_RAM_START_PTR          ((uint32_t)0x60000000)
+#define EXT_RAM_START_PTR          ((uint32_t)0x20000000)
 
 // 32 bit arrays for reading from eeprom
 uint32_t key32[4];
