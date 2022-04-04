@@ -325,7 +325,6 @@ void handle_update(void)
     uint32_t size = 0;
     uint32_t rel_msg_size = 0;
     uint8_t rel_msg[1025]; // 1024 + terminator
-    uint8_t pbuff[16];
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'U');
@@ -454,14 +453,15 @@ void load_data(uint32_t interface, uint32_t dst, uint32_t size)
  */
 void handle_configure(void)
 {
-    int i;
-    int j;
+    //int i;
+    //int j;
     uint32_t size = 0;
-    uint32_t frame_size;
-    uint8_t page_buffer[FLASH_PAGE_SIZE];
-    uint32_t dst = CONFIGURATION_STORAGE_PTR;
-    uint32_t pos = 0;
-    int32_t remaining;
+    //uint32_t frame_size;
+    //uint8_t page_buffer[FLASH_PAGE_SIZE];
+    //uint32_t dst = CONFIGURATION_STORAGE_PTR;
+    //uint32_t pos = 0;
+    //int32_t remaining;
+    uint8_t pbuff[16];
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
@@ -487,7 +487,7 @@ void handle_configure(void)
     size |= (((uint32_t)uart_readb(HOST_UART)) << 8);
     size |= ((uint32_t)uart_readb(HOST_UART));
 
-    remaining = size;   
+    //remaining = size;   
 
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
