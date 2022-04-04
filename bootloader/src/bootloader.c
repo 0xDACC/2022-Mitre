@@ -461,13 +461,9 @@ void handle_configure(void)
     //uint32_t dst = CONFIGURATION_STORAGE_PTR;
     //uint32_t pos = 0;
     //int32_t remaining;
-    uint8_t pbuff[16];
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
-
-    // Read the password supplied by the host
-    uart_read(HOST_UART, pbuff, 16);
 
     //Acknowledge
     uart_writeb(HOST_UART, FRAME_OK);
@@ -571,10 +567,20 @@ void handle_configure(void)
        bbuff[i] = *((uint8_t *)CONFIGURATION_STORAGE_PTR + i);
     }
 
+    uint8_t badpasswordflag = 0;
+
     for(int i = 0; i < 16; i ++){
         if(bbuff[i] != password[i]){
             // Bad password
             uart_writeb(HOST_UART, FRAME_BAD);
+            badpasswordflag = 1;
+        }
+    }
+
+    // just remove all the stuff we just installed if its bad
+    if(badpasswordflag == 1){
+        for(int i = 0; i < 16; i ++){
+            flash_erase_page(CONFIGURATION_STORAGE_PTR + (i * FLASH_PAGE_SIZE));
             return;
         }
     }
