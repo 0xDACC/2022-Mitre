@@ -27,9 +27,10 @@ RUN mkdir /secrets
 ADD host_tools/ /host_tools
 ADD bootloader /bl_build
 
-# Make sure there are empty files for key and iv
+# Make sure there are empty files for key and iv and password
 RUN echo "" > /secrets/key
 RUN echo "" > /secrets/iv
+RUN echo "" > /secrets/password
 
 #Generate Keys
 RUN python3 /host_tools/keygen
