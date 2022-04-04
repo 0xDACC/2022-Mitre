@@ -465,18 +465,6 @@ void handle_configure(void)
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
 
-    //Acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
-
-    // Check is the password supplied is the correct one
-    for(int i = 0; i < 16; i++){
-        if(pbuff[i] != password[i]){
-            //incorrect or invalid password
-            uart_writeb(HOST_UART, FRAME_BAD);
-            return;
-        }
-    }
-
     // Receive size
     size = (((uint32_t)uart_readb(HOST_UART)) << 24);
     size |= (((uint32_t)uart_readb(HOST_UART)) << 16);
