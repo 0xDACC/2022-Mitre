@@ -66,8 +66,11 @@
 #define IV_OFFSET_PTR           ((uint32_t)EEPROM_START_PTR + 16)
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
-//Latest point where we can store 16kb of data for loading
-#define FW_RAM_START_PTR          ((uint32_t)0x20003FEC)
+//Latest point where we can store 16kb + 16b of data for loading
+#define FW_RAM_START_PTR        ((uint32_t)0x20003FEC)
+
+// where we will hold cfg in memory for decryption. I hate this so much
+#define CFG_RAM_START_PTR       ((uint32_t)0x0000ffff)
 
 // 32 bit arrays for reading from eeprom
 uint32_t key32[4];
@@ -453,14 +456,14 @@ void load_data(uint32_t interface, uint32_t dst, uint32_t size)
  */
 void handle_configure(void)
 {
-    //int i;
-    //int j;
+    int i;
+    int j;
     uint32_t size = 0;
-    //uint32_t frame_size;
-    //uint8_t page_buffer[FLASH_PAGE_SIZE];
-    //uint32_t dst = CONFIGURATION_STORAGE_PTR;
-    //uint32_t pos = 0;
-    //int32_t remaining;
+    uint32_t frame_size;
+    uint8_t page_buffer[FLASH_PAGE_SIZE];
+    uint32_t dst = CONFIGURATION_STORAGE_PTR;
+    uint32_t pos = 0;
+    int32_t remaining;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
@@ -471,13 +474,12 @@ void handle_configure(void)
     size |= (((uint32_t)uart_readb(HOST_UART)) << 8);
     size |= ((uint32_t)uart_readb(HOST_UART));
 
-    //remaining = size;   
+    remaining = size;   
 
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
 
-    // Fill the firmware buffer
-    /*
+    // Fill the config buffer
     while(remaining > 0) {
         // calculate frame size
         frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
@@ -489,7 +491,7 @@ void handle_configure(void)
         }
         // add the page buffer to the config buffer
         for(j = 0; j < frame_size; j++){
-            *((uint8_t *)(EXT_RAM_START_PTR + j + pos)) = page_buffer[j];
+            *((uint8_t *)CFG_RAM_START_PTR + j + pos)) = page_buffer[j];
         }
         pos += FLASH_PAGE_SIZE;
         remaining -= frame_size;
@@ -502,11 +504,11 @@ void handle_configure(void)
     // Decrypt
     struct AES_ctx config_ctx;
     AES_init_ctx_iv(&config_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&config_ctx, (uint8_t *)(EXT_RAM_START_PTR), size);
+    AES_CBC_decrypt_buffer(&config_ctx, (uint8_t *)(CFG_RAM_START_PTR), size);
 
     // Check signature
     for(i = 0; i < 16; i++){
-        if(password[i] != *((uint8_t *)(EXT_RAM_START_PTR + ((size)-16) +i ))){
+        if(password[i] != *((uint8_t *)(CFG_RAM_START_PTR + ((size)-16) +i ))){
             // Firmware is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
@@ -529,7 +531,7 @@ void handle_configure(void)
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t *)(EXT_RAM_START_PTR + pos), dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)(CFG_RAM_START_PTR + pos), dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
@@ -539,42 +541,6 @@ void handle_configure(void)
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
 
-    */
-   load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size);
-
-
-    /* THIS NEXT BIT IS PAINFUL BE WARNED!
-   
-        Basically due to memory limits we cant hold the whole cfg in memory at once, so like... We just put the password on the front.
-    */
-
-    uint8_t bbuff[16];
-
-    // filling buffer
-    for(uint32_t i = 0; i < 16; i++){
-       bbuff[i] = *((uint8_t *)CONFIGURATION_STORAGE_PTR + i);
-    }
-
-    uint8_t badpasswordflag = 0;
-
-    for(int i = 0; i < 16; i ++){
-        if(bbuff[i] != password[i]){
-            // Bad password
-            uart_writeb(HOST_UART, FRAME_BAD);
-            badpasswordflag = 1;
-        }
-    }
-
-    // just remove all the stuff we just installed if its bad
-    if(badpasswordflag == 1){
-        for(uint32_t i = 0; i < 16; i ++){
-            flash_erase_page(CONFIGURATION_STORAGE_PTR + (i * FLASH_PAGE_SIZE));
-            return;
-        }
-    }
-
-    // acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
 }
 
 /**
