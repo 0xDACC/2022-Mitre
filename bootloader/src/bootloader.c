@@ -66,17 +66,8 @@
 #define IV_OFFSET_PTR           ((uint32_t)EEPROM_START_PTR + 16)
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
-// Ram layout
-/*
-*   code:           00000000 : 1FFFFFFF
-*   SRAM:           20000000 : 20008000
-*   External Ram:   60000000 : 9FFFFFFF
-*
-*/
-
-#define CODE_START_PTR             ((uint32_t)0x00000000) 
-#define SRAM_START_PTR             ((uint32_t)0x20000000)
-#define EXT_RAM_START_PTR          ((uint32_t)0x20002000)
+//Latest point where we can store 16kb of data for loading
+#define FW_RAM_START_PTR          ((uint32_t)0x20003FEC)
 
 // 32 bit arrays for reading from eeprom
 uint32_t key32[4];
@@ -208,6 +199,7 @@ void handle_readback(void)
     if(region == 'C'){
         // Read out the data
         uart_write(HOST_UART, address, size);
+        // and exit because the rest of this function will break if it tries to do it on 64k of unencrypted config data
         return;
     }
 
@@ -225,9 +217,9 @@ void handle_readback(void)
     // Fill the buffer
     for(int i = 0; i < buffsize; i++){
         if(i < fsize-16){
-            *((uint8_t *)(EXT_RAM_START_PTR + i)) = address[i];
+            *((uint8_t *)(FW_RAM_START_PTR + i)) = address[i];
         } else {
-            *((uint8_t *)(EXT_RAM_START_PTR + i)) = 0xFF;
+            *((uint8_t *)(FW_RAM_START_PTR + i)) = 0xFF;
         }
         
     }
@@ -237,11 +229,11 @@ void handle_readback(void)
         // Decrypt
         struct AES_ctx readback_ctx;
         AES_init_ctx_iv(&readback_ctx, key, iv);
-        AES_CBC_decrypt_buffer(&readback_ctx, (uint8_t *)(EXT_RAM_START_PTR), fsize-16);
+        AES_CBC_decrypt_buffer(&readback_ctx, (uint8_t *)(FW_RAM_START_PTR), fsize-16);
     }
 
     // Read out the data
-    uart_write(HOST_UART, (uint8_t *)(EXT_RAM_START_PTR), size);
+    uart_write(HOST_UART, (uint8_t *)(FW_RAM_START_PTR), size);
 }
 
 /**
@@ -249,10 +241,6 @@ void handle_readback(void)
  * 
  * @param interface is the host uart to read from
  * @param size is the ammount of bytes to read
- * 
- * You'll notice that instead of using a buffer like we probably should, we use a pointer to the firmware boot location.
- * This is because memory AFTER this address is not going to be used by the bootloader. We previously used a buffer with an automatically allocated address, but this caused errors for some reason.
- * So we explicitly state the location for the firmware buffer, and the easiest location to use was just the firmware boot ptr
  */
 void load_firmware(uint32_t interface, uint32_t size){
     int i;
@@ -275,7 +263,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         }
         // add the page buffer to the firmware buffer
         for(j = 0; j < frame_size; j++){
-            *((uint8_t *)(EXT_RAM_START_PTR + j + pos)) = page_buffer[j];
+            *((uint8_t *)(FW_RAM_START_PTR + j + pos)) = page_buffer[j];
         }
         pos += FLASH_PAGE_SIZE;
         remaining -= frame_size;
@@ -289,11 +277,11 @@ void load_firmware(uint32_t interface, uint32_t size){
     // Decrypt
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(EXT_RAM_START_PTR), size);
+    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FW_RAM_START_PTR), size);
 
     // Check signature
     for(i = 0; i < 16; i++){
-        if(password[i] != *((uint8_t *)(EXT_RAM_START_PTR + ((size)-16) +i ))){
+        if(password[i] != *((uint8_t *)(FW_RAM_START_PTR + ((size)-16) +i ))){
             // Firmware is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
@@ -303,7 +291,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     // encrypt again for storage on the flash
     struct AES_ctx refirmware_ctx;
     AES_init_ctx_iv(&refirmware_ctx, key, iv);
-    AES_CBC_encrypt_buffer(&refirmware_ctx, (uint8_t *)(EXT_RAM_START_PTR), size);
+    AES_CBC_encrypt_buffer(&refirmware_ctx, (uint8_t *)(FW_RAM_START_PTR), size);
     
     remaining = size;
     pos = 0;
@@ -318,7 +306,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t *)(EXT_RAM_START_PTR + pos), dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)(FW_RAM_START_PTR + pos), dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
@@ -337,6 +325,7 @@ void handle_update(void)
     uint32_t size = 0;
     uint32_t rel_msg_size = 0;
     uint8_t rel_msg[1025]; // 1024 + terminator
+    uint8_t pbuff[16];
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'U');
@@ -424,6 +413,39 @@ void handle_update(void)
     uart_writeb(HOST_UART, FRAME_OK);
 }
 
+/**
+ * @brief Read data from a UART interface and program to flash memory.
+ * 
+ * @param interface is the base address of the UART interface to read from.
+ * @param dst is the starting page address to store the data.
+ * @param size is the number of bytes to load.
+ */
+void load_data(uint32_t interface, uint32_t dst, uint32_t size)
+{
+    int i;
+    uint32_t frame_size;
+    uint8_t page_buffer[FLASH_PAGE_SIZE];
+
+    while(size > 0) {
+        // calculate frame size
+        frame_size = size > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : size;
+        // read frame into buffer
+        uart_read(HOST_UART, page_buffer, frame_size);
+        // pad buffer if frame is smaller than the page
+        for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
+            page_buffer[i] = 0xFF;
+        }
+        // clear flash page
+        flash_erase_page(dst);
+        // write flash page
+        flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
+        // next page and decrease size
+        dst += FLASH_PAGE_SIZE;
+        size -= frame_size;
+        // send frame ok
+        uart_writeb(HOST_UART, FRAME_OK);
+    }
+}
 
 /**
  * @brief Load configuration data.
@@ -444,6 +466,21 @@ void handle_configure(void)
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
 
+    // Read the password supplied by the host
+    uart_read(HOST_UART, pbuff, 16);
+
+    //Acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
+
+    // Check is the password supplied is the correct one
+    for(int i = 0; i < 16; i++){
+        if(pbuff[i] != password[i]){
+            //incorrect or invalid password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
     // Receive size
     size = (((uint32_t)uart_readb(HOST_UART)) << 24);
     size |= (((uint32_t)uart_readb(HOST_UART)) << 16);
@@ -456,6 +493,7 @@ void handle_configure(void)
     uart_writeb(HOST_UART, FRAME_OK);
 
     // Fill the firmware buffer
+    /*
     while(remaining > 0) {
         // calculate frame size
         frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
@@ -516,6 +554,12 @@ void handle_configure(void)
 
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
+
+    */
+   load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size);
+
+   // acknowledge
+   uart_writeb(HOST_UART, FRAME_OK);
 }
 
 /**
