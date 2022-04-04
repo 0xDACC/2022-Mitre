@@ -551,7 +551,7 @@ void handle_configure(void)
     uint8_t bbuff[16];
 
     // filling buffer
-    for(int i = 0; i < 16; i++){
+    for(uint32_t i = 0; i < 16; i++){
        bbuff[i] = *((uint8_t *)CONFIGURATION_STORAGE_PTR + i);
     }
 
@@ -567,7 +567,7 @@ void handle_configure(void)
 
     // just remove all the stuff we just installed if its bad
     if(badpasswordflag == 1){
-        for(int i = 0; i < 16; i ++){
+        for(uint32_t i = 0; i < 16; i ++){
             flash_erase_page(CONFIGURATION_STORAGE_PTR + (i * FLASH_PAGE_SIZE));
             return;
         }
