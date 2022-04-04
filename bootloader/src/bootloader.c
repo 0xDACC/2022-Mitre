@@ -491,7 +491,7 @@ void handle_configure(void)
         }
         // add the page buffer to the config buffer
         for(j = 0; j < frame_size; j++){
-            *((uint8_t *)CFG_RAM_START_PTR + j + pos)) = page_buffer[j];
+            *((uint8_t *)CFG_RAM_START_PTR + j + pos) = page_buffer[j];
         }
         pos += FLASH_PAGE_SIZE;
         remaining -= frame_size;
