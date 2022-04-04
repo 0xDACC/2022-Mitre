@@ -38,8 +38,8 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
     padded_cfg = file_data
     padded_cfg += (b'\xFF' * ((16 - len(file_data) % 16) % 16))
 
-    # Add password as signature for bootloader to check
-    # padded_cfg += password
+    # Add password as signature for bootloader to check (but at the beginning due to memory limits)
+    padded_cfg = password + padded_cfg
     
     # creating new aes object. We can only use this object once.
     cipher = AES.new(key, AES.MODE_CBC, iv)

@@ -558,8 +558,29 @@ void handle_configure(void)
     */
    load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size);
 
-   // acknowledge
-   uart_writeb(HOST_UART, FRAME_OK);
+
+    /* THIS NEXT BIT IS PAINFUL BE WARNED!
+   
+        Basically due to memory limits we cant hold the whole cfg in memory at once, so like... We just put the password on the front.
+    */
+
+    uint8_t bbuff[16];
+
+    // filling buffer
+    for(int i = 0; i < 16; i++){
+       bbuff[i] = *((uint8_t *)CONFIGURATION_STORAGE_PTR + i);
+    }
+
+    for(int i = 0; i < 16; i ++){
+        if(bbuff[i] != password[i]){
+            // Bad password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
+    // acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
 }
 
 /**
