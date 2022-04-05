@@ -109,9 +109,9 @@ void handle_boot(void)
     }
 
     // Decrypt
-    struct AES_ctx firmware_ctx;
-    AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FW_RAM_START_PTR), size);
+    struct AES_ctx newfirmware_ctx;
+    AES_init_ctx_iv(&newfirmware_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&newfirmware_ctx, (uint8_t *)(FW_RAM_START_PTR), size);
 
     // check password
     for(i = 0; i < 16; i++){
