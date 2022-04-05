@@ -50,7 +50,7 @@ def load_configuration(socket_number: int, config_file: Path):
         log.info("Sending configuration...")
 
         # 1040 because its 1024 bytes of data + 16 byte password
-        for i in range(0, len(configuration)/1040):
+        for i in range(0, int(len(configuration)/1040)):
             frame = configuration[i*1040:(i+1)*1040]
             dataframe = frame[:-16]
             passframe= frame[-16:]
