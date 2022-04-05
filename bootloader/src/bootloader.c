@@ -526,6 +526,9 @@ void handle_configure(void)
 
         dst += FLASH_PAGE_SIZE;
         remaining -= 1030;
+
+        //acknowledge
+        uart_writeb(HOST_UART, FRAME_OK);
     }
 
     /*
