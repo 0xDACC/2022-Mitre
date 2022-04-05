@@ -43,7 +43,7 @@
 #define FIRMWARE_RELEASE_MSG_PTR2  ((uint32_t)(FIRMWARE_METADATA_PTR + FLASH_PAGE_SIZE))
 
 #define FIRMWARE_STORAGE_PTR       ((uint32_t)(FIRMWARE_METADATA_PTR + (FLASH_PAGE_SIZE*2)))
-#define FIRMWARE_BOOT_PTR          ((uint32_t)0x20003FEC)
+#define FIRMWARE_BOOT_PTR          ((uint32_t)0x20004000)
 
 #define CONFIGURATION_METADATA_PTR ((uint32_t)(FIRMWARE_STORAGE_PTR + (FLASH_PAGE_SIZE*16)))
 #define CONFIGURATION_SIZE_PTR     ((uint32_t)(CONFIGURATION_METADATA_PTR + 0))
@@ -103,23 +103,35 @@ void handle_boot(void)
         uart_writeb(HOST_UART, FRAME_BAD);
     }
 
-    // Copy the firmware into the Boot RAM section
+    // Copy the firmware JUST before the boot ram section, so it can be decrypted and checked for authenticity
     for (i = 0; i < size; i++) {
+        *((uint8_t *)(FW_RAM_START_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+    }
+
+    // Decrypt
+    struct AES_ctx firmware_ctx;
+    AES_init_ctx_iv(&firmware_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FW_RAM_START_PTR), size);
+
+    // check password
+    for(i = 0; i < 16; i++){
+        if(*((uint8_t *)(FW_RAM_START_PTR + (size-16) + i)) != password[i]){
+            // password is incorrect, so the firmware was tampered with
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
+    // Now that we know its good FW we wanna move it to the correct boot positon
+    for (i = 0; i < size-16; i++) {
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
     // Decrypt
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), size);
-
-    // check password
-    for(i = 0; i < 16; i++){
-        if(*((uint8_t *)(FIRMWARE_BOOT_PTR + (size-16) + i)) != password[i]){
-            // password is incorrect, so the firmware was tampered with
-            uart_writeb(HOST_UART, FRAME_BAD);
-        }
-    }
+    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), (size-16));
+    
 
     // acknowledge host
     uart_writeb(HOST_UART, 'M');
