@@ -461,9 +461,12 @@ void handle_configure(void)
     uint32_t size = 0;
     uint32_t frame_size;
     uint8_t page_buffer[FLASH_PAGE_SIZE];
+    uint8_t pass_buffer[16];
+    uint8_t frame_buffer[1030];
     uint32_t dst = CONFIGURATION_STORAGE_PTR;
     uint32_t pos = 0;
     int32_t remaining;
+    uint8_t badpass = 0;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
@@ -479,6 +482,53 @@ void handle_configure(void)
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
 
+    // recieve the frames, receive the password, combine, decrypt, store in flash, rinse and repeat
+    while(remaining > 0){
+        // Data frame
+        uart_read(HOST_UART, page_buffer, FLASH_PAGE_SIZE);
+
+        // password frame
+        uart_read(HOST_UART, pass_buffer, 16);
+
+        //combine
+        for(i = 0; i < FLASH_PAGE_SIZE; i++){
+            frame_buffer[i] = page_buffer[i];
+        }
+        for(i = 0; i < 16; i++){
+            frame_buffer[i+FLASH_PAGE_SIZE] = pass_buffer[i];
+        }
+
+        // Decrypt
+        struct AES_ctx config_ctx;
+        AES_init_ctx_iv(&config_ctx, key, iv);
+        AES_CBC_decrypt_buffer(&config_ctx, frame_buffer, 1040);
+
+        //check password
+        for(i = 0; i < 16; i++){
+            if(page_buffer[i+FLASH_PAGE_SIZE] != password[i]){
+                // Bad password
+                uart_writeb(HOST_UART, FRAME_BAD);
+                badpass = 0xFF;
+            }
+        }
+
+        // If the config was bad we want to erase anything we've written so we dont have ANY malicious data in there
+        if(badpass != 0){
+            for(i = 0; i < 64; i++){
+                flash_erase_page(CONFIGURATION_STORAGE_PTR+(i*FLASH_PAGE_SIZE));
+            }
+            return;
+        }
+
+        // write this frame to the flash
+        flash_erase_page(dst);
+        flash_write(page_buffer, dst, FLASH_PAGE_SIZE >> 2);
+
+        dst += FLASH_PAGE_SIZE;
+        remaining -= 1030;
+    }
+
+    /*
     // Fill the config buffer
     while(remaining > 0) {
         // calculate frame size
@@ -541,6 +591,7 @@ void handle_configure(void)
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
 
+    */
 }
 
 /**

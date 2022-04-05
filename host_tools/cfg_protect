@@ -34,18 +34,29 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
     iv = Path("/secrets/iv").read_bytes()
     password = Path("/secrets/password").read_bytes()
 
-    # Pad extra data on the end of the file to make sure its compatable with aes block sizes (128 bits / 16 bytes)
+    # We will also pad on extra data to make it divisible by 1024, which will make it easier to do the next few steps.
     padded_cfg = file_data
-    padded_cfg += (b'\xFF' * ((16 - len(file_data) % 16) % 16))
+    padded_cfg += (b'\xFF' * ((1024 - len(file_data) % 1024) % 1024))
 
-    # Add password as signature for bootloader to check (but at the beginning due to memory limits)
-    padded_cfg += password
-    
-    # creating new aes object. We can only use this object once.
-    cipher = AES.new(key, AES.MODE_CBC, iv)
+    # string which will hold the completed cfg protect file
+    encrypted_cfg = b''
 
-    # encrypt() returns a byte string e.g. b'0123456789abcdef'
-    encrypted_cfg = cipher.encrypt(padded_cfg)
+    # Now we split the padded config by every 1kb and do two things: 1) pack password to end of 1kb section, 2)encrypt each 1kb section
+    for i in range(0, (len(padded_cfg) / 1024)):
+        # Slice into 1kb frames
+        frame = padded_cfg[(i*1024):((i+1)*1024)]
+
+        # Add password
+        frame += password
+
+        # creating new aes object.
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+
+        # encrypt
+        enc_frame = cipher.encrypt(frame)
+
+        #combine
+        encrypted_cfg += enc_frame
 
     log.info("Packaging the configuration...")
 
