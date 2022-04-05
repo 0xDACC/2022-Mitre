@@ -537,7 +537,7 @@ void handle_configure(void)
         flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
 
         dst += FLASH_PAGE_SIZE;
-        remaining -= 1030;
+        remaining -= 1040;
         size -= 16;
         
     }
