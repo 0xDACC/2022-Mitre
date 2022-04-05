@@ -545,9 +545,11 @@ void handle_configure(void)
         }
 
         // resetting password region just in case
+        /*
         for(i = 0; i < 16; i++){
             frame_buffer[i+FLASH_PAGE_SIZE] = 0xFF;
         }
+        */
 
         // write this frame to the flash
         flash_erase_page(dst);
