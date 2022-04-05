@@ -551,9 +551,14 @@ void handle_configure(void)
         }
         */
 
+        // Decrypt
+        struct AES_ctx newconfig_ctx;
+        AES_init_ctx_iv(&newconfig_ctx, key, iv);
+        AES_CBC_decrypt_buffer(&newconfig_ctx, page_buffer, 1024);
+
         // write this frame to the flash
         flash_erase_page(dst);
-        flash_write((uint32_t *)frame_buffer, dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
 
         dst += FLASH_PAGE_SIZE;
         remaining -= 1040;
