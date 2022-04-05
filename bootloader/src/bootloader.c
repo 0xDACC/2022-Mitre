@@ -538,7 +538,11 @@ void handle_configure(void)
 
         dst += FLASH_PAGE_SIZE;
         remaining -= 1030;
+        size -= 16;
+        
     }
+
+    flash_write_word(size, CONFIGURATION_SIZE_PTR);
 
     /*
     // Fill the config buffer
