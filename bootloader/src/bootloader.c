@@ -487,8 +487,14 @@ void handle_configure(void)
         // Data frame
         uart_read(HOST_UART, page_buffer, FLASH_PAGE_SIZE);
 
+        //acknowledge
+        uart_writeb(HOST_UART, FRAME_OK);
+
         // password frame
         uart_read(HOST_UART, pass_buffer, 16);
+
+        //acknowledge
+        uart_writeb(HOST_UART, FRAME_OK);
 
         //combine
         for(i = 0; i < FLASH_PAGE_SIZE; i++){
