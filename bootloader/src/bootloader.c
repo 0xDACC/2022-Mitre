@@ -457,14 +457,14 @@ void load_data(uint32_t interface, uint32_t dst, uint32_t size)
 void handle_configure(void)
 {
     int i;
-    int j;
+    //int j;
     uint32_t size = 0;
-    uint32_t frame_size;
+    //uint32_t frame_size;
     uint8_t page_buffer[FLASH_PAGE_SIZE];
     uint8_t pass_buffer[16];
     uint8_t frame_buffer[1030];
     uint32_t dst = CONFIGURATION_STORAGE_PTR;
-    uint32_t pos = 0;
+    //uint32_t pos = 0;
     int32_t remaining;
     uint8_t badpass = 0;
 
@@ -522,7 +522,7 @@ void handle_configure(void)
 
         // write this frame to the flash
         flash_erase_page(dst);
-        flash_write(page_buffer, dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
 
         dst += FLASH_PAGE_SIZE;
         remaining -= 1030;
