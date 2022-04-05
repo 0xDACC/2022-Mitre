@@ -42,7 +42,7 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
     encrypted_cfg = b''
 
     # Now we split the padded config by every 1kb and do two things: 1) pack password to end of 1kb section, 2)encrypt each 1kb section
-    for i in range(0, (len(padded_cfg) / 1024)):
+    for i in range(0, int((len(padded_cfg) / 1024))):
         # Slice into 1kb frames
         frame = padded_cfg[(i*1024):((i+1)*1024)]
 
