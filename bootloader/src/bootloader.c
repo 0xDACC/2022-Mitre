@@ -518,6 +518,9 @@ void handle_configure(void)
             }
         }
 
+        //acknowledge
+        uart_writeb(HOST_UART, FRAME_OK);
+
         // If the config was bad we want to erase anything we've written so we dont have ANY malicious data in there
         if(badpass != 0){
             for(i = 0; i < 64; i++){
