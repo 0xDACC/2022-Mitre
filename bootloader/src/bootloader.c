@@ -490,6 +490,9 @@ void handle_configure(void)
         //acknowledge
         uart_writeb(HOST_UART, FRAME_OK);
 
+        //acknowledge
+        uart_writeb(HOST_UART, FRAME_OK);
+
         // password frame
         uart_read(HOST_UART, pass_buffer, 16);
 
@@ -535,9 +538,6 @@ void handle_configure(void)
 
         dst += FLASH_PAGE_SIZE;
         remaining -= 1030;
-
-        //acknowledge
-        uart_writeb(HOST_UART, FRAME_OK);
     }
 
     /*
