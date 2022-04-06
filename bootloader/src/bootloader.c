@@ -78,8 +78,7 @@
 #define LONG_BUFFER_START_PTR   ((uint32_t)0x20003FE0)
 
 
-// I realize that really I don't need the 32 bit ones to be global and it just wastes memory, and is probably a bad idea to have more copies of these floating in memory
-// Sue me, OK?
+// These buffers are overkill. Sue me, ok?
 
 // 32 bit arrays for reading from eeprom
 uint32_t key32[4];
