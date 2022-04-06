@@ -68,7 +68,7 @@
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
 //Latest point where we can store 16kb + 16b of data for loading fw
-#define FW_RAM_START_PTR        ((uint32_t)0x20003FE0)
+#define LONG_BUFFER_START_PTR   ((uint32_t)0x20003FE0)
 
 
 // 32 bit arrays for reading from eeprom
@@ -104,17 +104,17 @@ void handle_boot(void)
 
     // Copy the firmware JUST before the boot ram section, so it can be decrypted and checked for authenticity
     for (i = 0; i < size; i++) {
-        *((uint8_t *)(FW_RAM_START_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+        *((uint8_t *)(LONG_BUFFER_START_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
     // Decrypt
     struct AES_ctx newfirmware_ctx;
     AES_init_ctx_iv(&newfirmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&newfirmware_ctx, (uint8_t *)(FW_RAM_START_PTR), size);
+    AES_CBC_decrypt_buffer(&newfirmware_ctx, (uint8_t *)(LONG_BUFFER_START_PTR), size);
 
     // check password
     for(i = 0; i < 16; i++){
-        if(*((uint8_t *)(FW_RAM_START_PTR + (size-16) + i)) != password[i]){
+        if(*((uint8_t *)(LONG_BUFFER_START_PTR + (size-16) + i)) != password[i]){
             // password is incorrect, so the firmware was tampered with
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
@@ -231,9 +231,9 @@ void handle_readback(void)
     // Fill the buffer
     for(int i = 0; i < buffsize; i++){
         if(i < fsize-16){
-            *((uint8_t *)(FW_RAM_START_PTR + i)) = address[i];
+            *((uint8_t *)(LONG_BUFFER_START_PTR + i)) = address[i];
         } else {
-            *((uint8_t *)(FW_RAM_START_PTR + i)) = 0xFF;
+            *((uint8_t *)(LONG_BUFFER_START_PTR + i)) = 0xFF;
         }
         
     }
@@ -243,11 +243,11 @@ void handle_readback(void)
         // Decrypt
         struct AES_ctx readback_ctx;
         AES_init_ctx_iv(&readback_ctx, key, iv);
-        AES_CBC_decrypt_buffer(&readback_ctx, (uint8_t *)(FW_RAM_START_PTR), fsize-16);
+        AES_CBC_decrypt_buffer(&readback_ctx, (uint8_t *)(LONG_BUFFER_START_PTR), fsize-16);
     }
 
     // Read out the data
-    uart_write(HOST_UART, (uint8_t *)(FW_RAM_START_PTR), size);
+    uart_write(HOST_UART, (uint8_t *)(LONG_BUFFER_START_PTR), size);
 }
 
 /**
@@ -277,7 +277,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         }
         // add the page buffer to the firmware buffer
         for(j = 0; j < frame_size; j++){
-            *((uint8_t *)(FW_RAM_START_PTR + j + pos)) = page_buffer[j];
+            *((uint8_t *)(LONG_BUFFER_START_PTR + j + pos)) = page_buffer[j];
         }
         pos += FLASH_PAGE_SIZE;
         remaining -= frame_size;
@@ -291,11 +291,11 @@ void load_firmware(uint32_t interface, uint32_t size){
     // Decrypt
     struct AES_ctx firmware_ctx;
     AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FW_RAM_START_PTR), size);
+    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(LONG_BUFFER_START_PTR), size);
 
     // Check signature
     for(i = 0; i < 16; i++){
-        if(password[i] != *((uint8_t *)(FW_RAM_START_PTR + ((size)-16) +i ))){
+        if(password[i] != *((uint8_t *)(LONG_BUFFER_START_PTR + ((size)-16) +i ))){
             // Firmware is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
@@ -305,7 +305,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     // encrypt again for storage on the flash
     struct AES_ctx refirmware_ctx;
     AES_init_ctx_iv(&refirmware_ctx, key, iv);
-    AES_CBC_encrypt_buffer(&refirmware_ctx, (uint8_t *)(FW_RAM_START_PTR), size);
+    AES_CBC_encrypt_buffer(&refirmware_ctx, (uint8_t *)(LONG_BUFFER_START_PTR), size);
     
     remaining = size;
     pos = 0;
@@ -320,7 +320,7 @@ void load_firmware(uint32_t interface, uint32_t size){
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t *)(FW_RAM_START_PTR + pos), dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)(LONG_BUFFER_START_PTR + pos), dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
         remaining -= frame_size;
