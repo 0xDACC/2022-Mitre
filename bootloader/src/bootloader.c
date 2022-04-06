@@ -453,7 +453,6 @@ void handle_configure(void)
     uint8_t frame_buffer[1030];
     uint32_t dst = CONFIGURATION_STORAGE_PTR;
     int32_t remaining;
-    uint8_t badpass = 0;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
