@@ -3,15 +3,10 @@
  * @author 0xDACC Team (github.com/0xDACC)
  * @brief  The secure bootloader which meets all the functional and security requirements.
  * 
- * When I first wrote this code only God and I knew how it works. Now only God knows.
- * May he be with thee during your quest to try and read this unholy beast I dare call functional code.
- * 
  * @version 1.0
  * @date 2022-4-6
  * 
  * @copyright Copyright (c) 2022
- * 
- * As if youre going to steal this monstrosity...
  */
 
 #include <stdint.h>
@@ -114,7 +109,7 @@ void handle_boot(void)
     // Copy the firmware JUST before the boot ram section, so it can be decrypted and checked for authenticity
     // We need to copy this 16 bytes ahead because we can only use exactly 16kb of RAM for the firmware, and we have the extra 16 bytes of password
     // used for authentication. we need to basically copy this to the long buffer location and decrypt it, then check it, and then move it back to the correct location
-    // if we dont move it to exctly 0x20004000 it messes with the firmware in unpredictable ways (plus its a requirement so...)
+    // if we dont move it to exctly 0x20004000 it messes with the firmware in unpredictable ways
     for (i = 0; i < size; i++) {
         *((uint8_t *)(LONG_BUFFER_START_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
@@ -153,7 +148,7 @@ void handle_boot(void)
         uart_writeb(HOST_UART, *rel_msg);
         rel_msg++;
     }
-    uart_writeb(HOST_UART, '\0'); //Null terminator...
+    uart_writeb(HOST_UART, '\0'); // Null terminator...
 
     // Execute the firmware
     void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR + 1);
@@ -428,8 +423,6 @@ void handle_update(void)
         flash_erase_page(rel_msg_write_ptr);
     }
 
-    //Tbh I don't think this is needed, as it should always be only 1kb for a release message... But I'm too afraid to delete it at this point LOL
-
     // Program last or only page of release message
     if (rem_bytes % 4 != 0) {
         rem_bytes += 4 - (rem_bytes % 4); // Account for partial word
@@ -467,7 +460,7 @@ void handle_configure(void)
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
 
-    // recieve the frame, receive the password, combine, decrypt, store in flash, rinse and repeat until we are done with the load. 100% not optimized but mostly functional!
+    // recieve the frame, receive the password, combine, decrypt, store in flash, rinse and repeat until we are done with the load.
     while(remaining > 0){
         // Data frame
         uart_read(HOST_UART, page_buffer, FLASH_PAGE_SIZE);
@@ -553,8 +546,6 @@ int main(void){
 
     // Convert those 4 bytes of 32 bits into 16 bytes of 8 bits
     // There has to be an easier way to do this LOL
-    // maybe memcpy? But I don't wanna mess with that rn tbh. 
-    // Listen I've never coded in C before this is my first C project so I'm satisfied
     key[0] = key32[0];
     key[1] = key32[0] >> 8;
     key[2] = key32[0] >> 16;
