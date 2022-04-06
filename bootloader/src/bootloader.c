@@ -34,7 +34,7 @@
  *      Fw:      0x0002BC00 : 0x0002FC00 (16KB)
  * Configuration:
  *      Size:    0x0002FCFF : 0x00030FF (1KB = 4B + pad)
- *      Cfg:     0x00030000 : 0x0004000 (64KB)
+ *      Cfg:     0x000300FF : 0x00400FF (64KB)
  */
 #define FIRMWARE_METADATA_PTR      ((uint32_t)(FLASH_START + 0x0002B400))
 #define FIRMWARE_SIZE_PTR          ((uint32_t)(FIRMWARE_METADATA_PTR + 0))
@@ -545,11 +545,11 @@ void handle_configure(void)
         }
 
         // resetting password region just in case
-        /*
+        
         for(i = 0; i < 16; i++){
             frame_buffer[i+FLASH_PAGE_SIZE] = 0xFF;
         }
-        */
+        
 
         // Decrypt
         struct AES_ctx newconfig_ctx;
