@@ -32,9 +32,10 @@
  *      Version: 0x0002B404 : 0x0002B408 (4B)
  *      Msg:     0x0002B408 : 0x0002BC00 (~2KB = 1KB + 1B + pad)
  *      Fw:      0x0002BC00 : 0x0002FC00 (16KB)
+ *      FW pass: 0x0002FC00 : 0x0002FC0F (16B)
  * Configuration:
- *      Size:    0x0002FCFF : 0x00030FF (1KB = 4B + pad)
- *      Cfg:     0x000300FF : 0x00400FF (64KB)
+ *      Size:    0x0002FC0F : 0x00030000 (1KB = 4B + pad)
+ *      Cfg:     0x00030000 : 0x00040000 (64KB)
  */
 #define FIRMWARE_METADATA_PTR      ((uint32_t)(FLASH_START + 0x0002B400))
 #define FIRMWARE_SIZE_PTR          ((uint32_t)(FIRMWARE_METADATA_PTR + 0))
@@ -46,7 +47,7 @@
 #define FIRMWARE_BOOT_PTR          ((uint32_t)0x20004000)
 
 #define CONFIGURATION_METADATA_PTR ((uint32_t)(FIRMWARE_STORAGE_PTR + (FLASH_PAGE_SIZE*16)))
-#define CONFIGURATION_SIZE_PTR     ((uint32_t)(CONFIGURATION_METADATA_PTR + 0))
+#define CONFIGURATION_SIZE_PTR     ((uint32_t)(CONFIGURATION_METADATA_PTR + 16))
 
 #define CONFIGURATION_STORAGE_PTR  ((uint32_t)(CONFIGURATION_METADATA_PTR + FLASH_PAGE_SIZE))
 
@@ -66,11 +67,9 @@
 #define IV_OFFSET_PTR           ((uint32_t)EEPROM_START_PTR + 16)
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
-//Latest point where we can store 16kb + 16b of data for loading
+//Latest point where we can store 16kb + 16b of data for loading fw
 #define FW_RAM_START_PTR        ((uint32_t)0x20003FE0)
 
-// where we will hold cfg in memory for decryption. I hate this so much
-#define CFG_RAM_START_PTR       ((uint32_t)0x0000ffff)
 
 // 32 bit arrays for reading from eeprom
 uint32_t key32[4];
