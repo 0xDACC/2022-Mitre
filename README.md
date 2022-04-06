@@ -1,7 +1,11 @@
 # 2022 Mitre eCTF: 0xDACC Edition!
 This repo contains 0xDACC's code for this years challenge (the SAFFIRe bootloader)! It meets all functional and security requirements, and even catches edge cases! Try and attack our design, we dare you! 
 
-We have included a getting started document similar to the example which is below
+We have included a [Getting Started Guide](getting_started.md) similar to the example which is below
+
+There is also a detailed [reference guide](Reference Document.md) to explain in details the functionality of the device
+
+There are also detailed readme documents for the [bootloader](bootloader/README.md) and the [host tools](host_tools/README.md)
 
 ## Getting Started
 Please see the [Getting Started Guide](getting_started.md).
