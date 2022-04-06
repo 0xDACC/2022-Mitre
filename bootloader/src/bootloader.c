@@ -198,7 +198,7 @@ void handle_readback(void)
         // Set the base address for the readback
         fsize = *((uint32_t *)CONFIGURATION_SIZE_PTR);
         address = (uint8_t *)CONFIGURATION_STORAGE_PTR;
-        // Acknowledge the hose
+        // Acknowledge the host
         uart_writeb(HOST_UART, 'C');
     } else {
         uart_writeb(HOST_UART, 'Q');
