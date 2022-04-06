@@ -1,7 +1,7 @@
 # Host Tools
 This stuff is pretty jank, so we are going to try to explain it as well as possible...
 
-There is also an obscene ammount of comments throughout all the code as well
+There is also an obscene amount of comments throughout all the code as well
 
 ## Boot
 1. Connect to bootloader
