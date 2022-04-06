@@ -22,8 +22,6 @@ There is also an obscene amount of comments throughout all the code as well
 8. Write out to file
 
 ## CFG Load
-This one's weird...
-
 1. Connect to bootloader
 2. Negotiate with bootloader to enter configure mode
 3. Send CFG size
