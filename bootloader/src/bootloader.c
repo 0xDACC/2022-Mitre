@@ -6,7 +6,7 @@
  * When I first wrote this code only God and I knew how it works. Now only God knows.
  * May he be with thee during your quest to try and read this unholy beast I dare call functional code.
  * 
- * @version 1.2
+ * @version 1.0
  * @date 2022-4-6
  * 
  * @copyright Copyright (c) 2022
