@@ -2,7 +2,7 @@
  * @file bootloader.c
  * @author 0xDACC Team (github.com/0xDACC)
  * @brief  The secure bootloader which meets all the functional and security requirements
- * @version 1.0
+ * @version 1.2
  * @date 2022-03-20
  * 
  * @copyright Copyright (c) 2022
@@ -67,7 +67,7 @@
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
 //Latest point where we can store 16kb + 16b of data for loading
-#define FW_RAM_START_PTR        ((uint32_t)0x20003FEC)
+#define FW_RAM_START_PTR        ((uint32_t)0x20003FE0)
 
 // where we will hold cfg in memory for decryption. I hate this so much
 #define CFG_RAM_START_PTR       ((uint32_t)0x0000ffff)
