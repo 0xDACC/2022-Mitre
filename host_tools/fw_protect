@@ -50,7 +50,7 @@ def protect_firmware(firmware_file: Path, version: int, release_message: str, pr
     encrypted_firmware = cipher.encrypt(padded_firmware)
 
     # In order to meet functional and security requirements we need 2 things:
-    # For function, we need to make it cap off at 0xFFFF
+    # For function, we need to make it cap off at version 0xFFFF
     # And for security we need to encrypt it and add a password for authentiction and integrity
 
     # So here we check if the size is bigger than 8 bits

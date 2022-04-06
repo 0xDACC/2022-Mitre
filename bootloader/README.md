@@ -25,6 +25,7 @@ The SAFFIRe bootloader is the heart and soul of this years challenge, and as suc
    *If the authentication password is invalid or not present then the bootloader rejects the configuration*
 5. Save configuration to flash
 6. Save size to flash
+*Note: Config files are stored and encrypted in 1KB + 16B blocks, so this process is repeated until the whole file has been read*
 
 ## Readback
 Firmware readback and configuration readback are based in one function in the bootloader, and the bootloader sets the address we need to read from for either the firmware of congfiguration based on what the host tells it during the negotiation phase
@@ -36,8 +37,9 @@ Firmware readback and configuration readback are based in one function in the bo
 
 ## Boot
 1. Negotiate with the host to enter boot mode
-2. Copy the encrypted flash to the boot section of RAM
-3. Decrypt the boot section of ram
+2. Copy the encrypted flash to RAM
+3. Decrypt this section of RAM
    *If the authentication password is invalid or not present then the bootloader rejects the boot*
-4. Write the release message over uart
-5. Boot the firmware
+4. Move data to Boot section of RAM
+5. Write the release message over uart
+6. Boot the firmware
