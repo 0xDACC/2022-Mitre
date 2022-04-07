@@ -436,6 +436,9 @@ void handle_update(void)
 /**
  * @brief Load configuration data.
  */
+/**
+ * @brief Load configuration data.
+ */
 void handle_configure(void)
 {
     int i;
@@ -463,7 +466,7 @@ void handle_configure(void)
     // recieve the frame, receive the password, combine, decrypt, store in flash, rinse and repeat until we are done with the load.
     while(remaining > 0){
         // Data frame
-        uart_read(HOST_UART, page_buffer, FLASH_PAGE_SIZE);
+        uart_read(HOST_UART, frame_buffer, FLASH_PAGE_SIZE);
 
         // acknowledge
         uart_writeb(HOST_UART, FRAME_OK);
@@ -472,19 +475,10 @@ void handle_configure(void)
         uart_writeb(HOST_UART, FRAME_OK);
 
         // password frame
-        uart_read(HOST_UART, pass_buffer, 16);
+        uart_read(HOST_UART, (uint32_t *)&frame_buffer[FLASH_PAGE_SIZE], 16);
 
         // acknowledge
         uart_writeb(HOST_UART, FRAME_OK);
-
-        // combine the two frames
-        // This could have been done with pointers and stuff up there but screw that
-        for(i = 0; i < FLASH_PAGE_SIZE; i++){
-            frame_buffer[i] = page_buffer[i];
-        }
-        for(i = 0; i < 16; i++){
-            frame_buffer[i+FLASH_PAGE_SIZE] = pass_buffer[i];
-        }
 
         // Decrypt the combined thing
         struct AES_ctx config_ctx;
