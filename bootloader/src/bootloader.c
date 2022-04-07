@@ -443,8 +443,6 @@ void handle_configure(void)
 {
     int i;
     uint32_t size = 0;
-    uint8_t page_buffer[FLASH_PAGE_SIZE];
-    uint8_t pass_buffer[16];
     uint8_t frame_buffer[1030];
     uint32_t dst = CONFIGURATION_STORAGE_PTR;
     int32_t remaining;
@@ -475,7 +473,7 @@ void handle_configure(void)
         uart_writeb(HOST_UART, FRAME_OK);
 
         // password frame
-        uart_read(HOST_UART, (uint32_t *)&frame_buffer[FLASH_PAGE_SIZE], 16);
+        uart_read(HOST_UART, (uint8_t *)&frame_buffer[FLASH_PAGE_SIZE], 16);
 
         // acknowledge
         uart_writeb(HOST_UART, FRAME_OK);
