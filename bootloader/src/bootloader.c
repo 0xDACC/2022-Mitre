@@ -3,7 +3,7 @@
  * @author 0xDACC Team (github.com/0xDACC)
  * @brief  The secure bootloader which meets all the functional and security requirements.
  * 
- * @version 1.0
+ * @version 1.2
  * @date 2022-4-6
  * 
  * @copyright Copyright (c) 2022
@@ -474,7 +474,7 @@ void handle_configure(void)
 
         // acknowledge
         uart_writeb(HOST_UART, FRAME_OK);
-        
+
         // Decrypt the combined thing
         struct AES_ctx config_ctx;
         AES_init_ctx_iv(&config_ctx, key, iv);
