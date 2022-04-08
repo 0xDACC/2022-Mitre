@@ -472,7 +472,9 @@ void handle_configure(void)
         // password frame
         uart_read(HOST_UART, (uint8_t *)&frame_buffer[FLASH_PAGE_SIZE], 16);
 
-
+        // acknowledge
+        uart_writeb(HOST_UART, FRAME_OK);
+        
         // Decrypt the combined thing
         struct AES_ctx config_ctx;
         AES_init_ctx_iv(&config_ctx, key, iv);
