@@ -443,7 +443,7 @@ void handle_configure(void)
 {
     int i;
     uint32_t size = 0;
-    uint8_t frame_buffer[1030];
+    uint8_t frame_buffer[1040];
     uint32_t dst = CONFIGURATION_STORAGE_PTR;
     int32_t remaining;
 
