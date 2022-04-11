@@ -216,7 +216,7 @@ void handle_readback(void)
     size |= (uint32_t)uart_readb(HOST_UART);
 
     // Read out the data
-    uart_write(HOST_UART, (uint8_t *)(LONG_BUFFER_START_PTR), size);
+    uart_write(HOST_UART, (uint8_t *)address, size);
     /*
     // If we want config we can see it without any sort of decryption, so we do this to speed it up
     if(region == 'C'){
