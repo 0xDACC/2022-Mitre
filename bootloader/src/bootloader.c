@@ -130,6 +130,9 @@ void handle_boot(void)
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(LONG_BUFFER_START_PTR + i - 16));
     }
 
+    // acknowledge host
+    uart_writeb(HOST_UART, 'M');
+
     /*
     // Now that we know its good FW we wanna move it to the correct boot positon
     for (i = 0; i < size-16; i++) {
