@@ -3,7 +3,7 @@
  * @author 0xDACC Team (github.com/0xDACC)
  * @brief  The secure bootloader which meets all the functional and security requirements.
  * 
- * @version 1.0
+ * @version 1.2
  * @date 2022-4-6
  * 
  * @copyright Copyright (c) 2022
@@ -443,7 +443,7 @@ void handle_configure(void)
 {
     int i;
     uint32_t size = 0;
-    uint8_t frame_buffer[1030];
+    uint8_t frame_buffer[1040];
     uint32_t dst = CONFIGURATION_STORAGE_PTR;
     int32_t remaining;
 
@@ -465,9 +465,6 @@ void handle_configure(void)
     while(remaining > 0){
         // Data frame
         uart_read(HOST_UART, frame_buffer, FLASH_PAGE_SIZE);
-
-        // acknowledge
-        uart_writeb(HOST_UART, FRAME_OK);
 
         // acknowledge
         uart_writeb(HOST_UART, FRAME_OK);
