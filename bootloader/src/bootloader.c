@@ -215,6 +215,8 @@ void handle_readback(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
 
+
+    // If we want config we can see it without any sort of decryption, so we do this to speed it up
     if(region == 'C'){
         // Read out the data
         uart_write(HOST_UART, address, size);
