@@ -72,9 +72,6 @@
 // The longest buffer we will need will be stored at this address. 16KB + 16B, used for loading an entire firmware image + authentication password
 #define LONG_BUFFER_START_PTR   ((uint32_t)0x20003FE0)
 
-
-// These buffers are overkill. Sue me, ok?
-
 // 32 bit arrays for reading from eeprom
 uint32_t key32[4];
 uint32_t iv32[4];
@@ -128,6 +125,12 @@ void handle_boot(void)
         }
     }
 
+    // Shift decrypted firmware forward in ram 16 bytes, moving back to front.
+    for(i = size-16; i > 0; i--){
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(LONG_BUFFER_START_PTR + i - 16));
+    }
+
+    /*
     // Now that we know its good FW we wanna move it to the correct boot positon
     for (i = 0; i < size-16; i++) {
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
@@ -149,6 +152,7 @@ void handle_boot(void)
         rel_msg++;
     }
     uart_writeb(HOST_UART, '\0'); // Null terminator...
+    */
 
     // Execute the firmware
     void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR + 1);
@@ -217,48 +221,6 @@ void handle_readback(void)
 
     // Read out the data
     uart_write(HOST_UART, (uint8_t *)address, size);
-    /*
-    // If we want config we can see it without any sort of decryption, so we do this to speed it up
-    if(region == 'C'){
-        // Read out the data
-        uart_write(HOST_UART, address, size);
-        // and exit because the rest of this function will break if it tries to do its job on 64k of unencrypted config data. Trust me, I tried
-        return;
-    }
-
-    // This is a little weird so let me explain...
-    // In order to make sure we dont put out data that is unencrypted, we always want to decrypt more than we want to show
-    // But lets say that they want to see data outside of the region of data that they requested?
-    // Well we will just show a bunch of 0xFF for the data they requested thats outside of the requested region...
-    uint32_t buffsize = 0;
-    if(size > fsize){
-        buffsize = size;
-    } else {
-        buffsize = fsize;
-    }
-
-    // Fill the buffer, and replace data that they dont need to see with 0xFF
-    for(int i = 0; i < buffsize; i++){
-        if(i < fsize-16){
-            *((uint8_t *)(LONG_BUFFER_START_PTR + i)) = address[i];
-        } else {
-            *((uint8_t *)(LONG_BUFFER_START_PTR + i)) = 0xFF;
-        }
-        
-    }
-
-    // Since the config isnt encrytped on the flash (because really we cant tell the firmware how to decrypt it) we only want to decrypt the firmware.
-    // Note: This should ALWAYS run if the program has gotten to this point due to the previous check for config/firmware.
-    if(region == 'F'){
-        // Decrypt
-        struct AES_ctx readback_ctx;
-        AES_init_ctx_iv(&readback_ctx, key, iv);
-        AES_CBC_decrypt_buffer(&readback_ctx, (uint8_t *)(LONG_BUFFER_START_PTR), fsize-16);
-    }
-
-    // Read out the data
-    uart_write(HOST_UART, (uint8_t *)(LONG_BUFFER_START_PTR), size);
-    */
 }
 
 /**
