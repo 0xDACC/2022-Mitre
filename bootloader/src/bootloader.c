@@ -126,7 +126,7 @@ void handle_boot(void)
     }
 
     // Shift decrypted firmware forward in ram 16 bytes, moving back to front.
-    for(i = size-16; i > 0; i--){
+    for(i = size; i > 0; i--){
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(LONG_BUFFER_START_PTR + i - 16));
     }
 
