@@ -170,11 +170,8 @@ void handle_readback(void)
 {
     uint8_t region;
     uint8_t *address;
-    uint32_t fsize;
     uint32_t size = 0;
     uint8_t pbuff[16];
-
-    fsize = 0;
     
     // Acknowledge the host
     uart_writeb(HOST_UART, 'R');
@@ -203,13 +200,11 @@ void handle_readback(void)
     // Set base address for readback
     if (region == 'F') {
         // Set the base address for the readback
-        fsize = *((uint32_t *)FIRMWARE_SIZE_PTR);
         address = (uint8_t *)FIRMWARE_STORAGE_PTR;
         // Acknowledge the host
         uart_writeb(HOST_UART, 'F');
     } else if (region == 'C') {
         // Set the base address for the readback
-        fsize = *((uint32_t *)CONFIGURATION_SIZE_PTR);
         address = (uint8_t *)CONFIGURATION_STORAGE_PTR;
         // Acknowledge the host
         uart_writeb(HOST_UART, 'C');
