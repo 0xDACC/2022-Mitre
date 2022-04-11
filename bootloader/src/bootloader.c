@@ -167,9 +167,11 @@ void handle_readback(void)
 {
     uint8_t region;
     uint8_t *address;
-    uint32_t fsize = 0;
+    uint32_t fsize;
     uint32_t size = 0;
     uint8_t pbuff[16];
+
+    fsize = 0;
     
     // Acknowledge the host
     uart_writeb(HOST_UART, 'R');
