@@ -144,7 +144,7 @@ void handle_boot(void)
     
     // acknowledge host
     uart_writeb(HOST_UART, 'M');
-
+    */
     // Print the release message
     rel_msg = (uint8_t *)FIRMWARE_RELEASE_MSG_PTR;
     while (*rel_msg != 0) {
@@ -152,7 +152,7 @@ void handle_boot(void)
         rel_msg++;
     }
     uart_writeb(HOST_UART, '\0'); // Null terminator...
-    */
+    
 
     // Execute the firmware
     void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR + 1);
