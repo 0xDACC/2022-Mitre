@@ -86,7 +86,7 @@ def readback(socket_number, region, num_bytes):
 
         decrypted_firmware = b''
 
-        if region == b"F":
+        if region == "firmware":
             cipher = AES.new(key, AES.MODE_CBC, iv)
             decrypted_firmware = cipher.decrypt(fw)
             print(f"{decrypted_firmware.hex()}")
