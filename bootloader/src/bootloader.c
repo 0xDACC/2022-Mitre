@@ -126,6 +126,7 @@ void handle_boot(void)
     }
 
     // Shift decrypted firmware forward in ram 16 bytes, moving back to front.
+    // Keep in mind that LONG_BUFFER_START is 16 bytes ahead of FIRMWARE_BOOT_PTR
     for(i = size-16; i > 0; i--){
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(LONG_BUFFER_START_PTR + i));
     }
@@ -133,21 +134,6 @@ void handle_boot(void)
     // acknowledge host
     uart_writeb(HOST_UART, 'M');
 
-    /*
-    // Now that we know its good FW we wanna move it to the correct boot positon
-    for (i = 0; i < size-16; i++) {
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
-    }
-    //Note: that also overwrites the unencrypted password which would've been held in memory in the last 16 bytes
-
-    // Decrypt
-    struct AES_ctx firmware_ctx;
-    AES_init_ctx_iv(&firmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firmware_ctx, (uint8_t *)(FIRMWARE_BOOT_PTR), (size-16));
-    
-    // acknowledge host
-    uart_writeb(HOST_UART, 'M');
-    */
     // Print the release message
     rel_msg = (uint8_t *)FIRMWARE_RELEASE_MSG_PTR;
     while (*rel_msg != 0) {
@@ -164,7 +150,7 @@ void handle_boot(void)
 
 
 /**
- * @brief Send the firmware data over the host interface.
+ * @brief Send the firmware data over the host interface. The host will decrypt it
  */
 void handle_readback(void)
 {
@@ -403,9 +389,6 @@ void handle_update(void)
 /**
  * @brief Load configuration data.
  */
-/**
- * @brief Load configuration data.
- */
 void handle_configure(void)
 {
     int i;
@@ -467,7 +450,7 @@ void handle_configure(void)
         dst += FLASH_PAGE_SIZE;
         remaining -= 1040;
         // For each 1KB of actual config data there will be an extra 16 bytes of password which was counted in the overall size
-        // So for each time this script runs we subtract 16 bytes from the size calculation
+        // So for each time this loop runs we subtract 16 bytes from the size calculation
         size -= 16;
         
     }
@@ -488,7 +471,7 @@ int main(void){
     while (!HWREG(SYSCTL_PREEPROM));
     EEPROMInit();
 
-    // Side note: Would not have figured that out without the organizers. Thanks Jake!
+    // Side note: Would not have figured out that part above without the organizers. Thanks Jake!
 
     // Reading from eeprom to the 32 bit arrays
     EEPROMRead(key32, (uint32_t)KEY_OFFSET_PTR, 16);
