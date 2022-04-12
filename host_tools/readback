@@ -84,8 +84,6 @@ def readback(socket_number, region, num_bytes):
             fw += data
             bytes_remaining -= num_received
 
-        decrypted_firmware = b''
-
         if region == "firmware":
             # New aes object
             cipher = AES.new(key, AES.MODE_CBC, iv)
@@ -97,7 +95,7 @@ def readback(socket_number, region, num_bytes):
             decrypted_firmware = cipher.decrypt(padded_fw)
 
             # Clip off the padding 
-            clipped_firmware = decrypted_firmware[:num_bytes]
+            clipped_firmware = decrypted_firmware[0:len(fw)]
 
             # print it
             print(f"{clipped_firmware.hex()}")
