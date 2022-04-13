@@ -208,9 +208,6 @@ void handle_readback(void)
     // Now we want to protect against readback overreach, meaning that we overreach what we really should be reading back. You asked for Fw, were ONLY going to give you FW
     // Read out the data
 
-    uart_write(HOST_UART, (uint8_t *)address, size);
-
-    /*
     if(region == 'F'){
         if(size <= *((uint32_t *)FIRMWARE_SIZE_PTR)){
             // its not in danger of any overreach
@@ -236,7 +233,6 @@ void handle_readback(void)
             }
         }
     }
-    */
     
 }
 
