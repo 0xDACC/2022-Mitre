@@ -456,6 +456,7 @@ void handle_configure(void)
         AES_init_ctx(&config_ctx, key);
         AES_ECB_decrypt(&config_ctx, frame_buffer);
 
+        /*
         // check password
         for(i = 0; i < 16; i++){
             if(frame_buffer[i+FLASH_PAGE_SIZE] != password[i]){
@@ -465,6 +466,7 @@ void handle_configure(void)
                 return;
             }
         }
+        */
 
         // acknowledge
         uart_writeb(HOST_UART, FRAME_OK);
