@@ -221,14 +221,14 @@ void handle_readback(void)
             }
         }
     } else {
-        if(size <= 65535){
+        if(size <= 65536){
             // its not in danger of any overreach
             uart_write(HOST_UART, (uint8_t *)address, size);
         } else {
             // its in danger of overreach, so we will fill the potential overreach with 0xFF
-            uart_write(HOST_UART, (uint8_t *)address, 65535);
+            uart_write(HOST_UART, (uint8_t *)address, 65536);
             // for the remaining bytes we send 0xFF
-            for(int i = 0; i < size - 65535; i++){
+            for(int i = 0; i < size - 65536; i++){
                 uart_writeb(HOST_UART, 0xFF);
             }
         }
