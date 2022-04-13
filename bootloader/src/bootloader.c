@@ -125,12 +125,6 @@ void handle_boot(void)
         }
     }
 
-    // Shift decrypted firmware forward in ram 16 bytes, moving back to front.
-    // Keep in mind that LONG_BUFFER_START is 16 bytes ahead of FIRMWARE_BOOT_PTR
-    for(i = size-16; i > 0; i--){
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(LONG_BUFFER_START_PTR + i));
-    }
-
     // acknowledge host
     uart_writeb(HOST_UART, 'M');
 
@@ -141,6 +135,12 @@ void handle_boot(void)
         rel_msg++;
     }
     uart_writeb(HOST_UART, '\0'); // Null terminator...
+
+    // Shift decrypted firmware forward in ram 16 bytes, moving back to front.
+    // Keep in mind that LONG_BUFFER_START is 16 bytes ahead of FIRMWARE_BOOT_PTR
+    for(i = size-16; i > 0; i--){
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(LONG_BUFFER_START_PTR + i));
+    }
     
 
     // Execute the firmware
@@ -340,7 +340,6 @@ void handle_update(void)
     size |= (uint32_t)uart_readb(HOST_UART);
 
     // get the size of the release message
-    // note: this is capped by the python host tool, so don't even TRY to exploit this! Really, it's not worth your time. Just look somewhere else
     rel_msg_size = uart_readline(HOST_UART, rel_msg) + 1; // Include terminator
 
     // Decrypt the version number
@@ -454,8 +453,8 @@ void handle_configure(void)
 
         // Decrypt the combined thing
         struct AES_ctx config_ctx;
-        AES_init_ctx_iv(&config_ctx, key, iv);
-        AES_CBC_decrypt_buffer(&config_ctx, frame_buffer, 1040);
+        AES_init_ctx(&config_ctx, key);
+        AES_ECB_decrypt_buffer(&config_ctx, frame_buffer, 1040);
 
         // check password
         for(i = 0; i < 16; i++){
