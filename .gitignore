@@ -7,7 +7,7 @@
 socks
 *.sock
 
-*.deleteme
+
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,c,c++,git,pycharm
@@ -21,7 +21,7 @@ socks
 *.o
 *.ko
 *.obj
-*.elf
+
 
 # Linker output
 *.ilk
