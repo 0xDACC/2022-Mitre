@@ -30,6 +30,8 @@ def readback(socket_number, region, num_bytes):
         key = Path("/secrets/key").read_bytes()
         iv = Path("/secrets/iv").read_bytes()
 
+        pbytes = (16 - (num_bytes % 16) % 16)
+
         sock.connect(("saffire-net", socket_number))
 
         # Send readback command
@@ -70,16 +72,17 @@ def readback(socket_number, region, num_bytes):
             return
 
         # Send the number of bytes to read
-        size = int.to_bytes(num_bytes, 4, "big")
+        size = int.to_bytes(pbytes, 4, "big")
         sock.send(size)
 
         # Receive firmware data
         log.info("Receiving firmware...")
-        bytes_remaining = num_bytes
+        bytes_remaining = pbytes
+        nbytes = pbytes
         fw = b""
         while bytes_remaining > 0:
-            num_bytes = 4096 if bytes_remaining > 4096 else bytes_remaining
-            data = sock.recv(num_bytes)
+            nbytes = 4096 if bytes_remaining > 4096 else bytes_remaining
+            data = sock.recv(nbytes)
             num_received = len(data)
             fw += data
             bytes_remaining -= num_received
@@ -87,21 +90,22 @@ def readback(socket_number, region, num_bytes):
         if region == "firmware":
             # New aes object
             cipher = AES.new(key, AES.MODE_CBC, iv)
-            
-            # padding data for decryption
-            padded_fw = fw + (b'\xFF' * ((16 - len(fw) % 16)))
+
+            # Note: the data is 'pre-padded'
+            # it has extra data that we didnt ask for, just for encryption purposes
 
             # Decrypt it
-            decrypted_firmware = cipher.decrypt(padded_fw)
+            decrypted_firmware = cipher.decrypt(fw)
 
             # Clip off the padding 
-            clipped_firmware = decrypted_firmware
+            clipped_firmware = decrypted_firmware[0:num_bytes]
 
             # print it
             print(f"{clipped_firmware.hex()}")
         else:
-            # if its config then its not gonna be encrypted so we can skip all the decryption
-            print(f"{fw.hex()}")
+            # if its config then its not gonna be encrypted so we can skip all the decryption and just clip it
+            clipped_fw = fw[0:num_bytes]
+            print(f"{clipped_fw.hex()}")
 
 
 def main():

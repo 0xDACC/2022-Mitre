@@ -205,8 +205,35 @@ void handle_readback(void)
     size |= ((uint32_t)uart_readb(HOST_UART)) << 8;
     size |= (uint32_t)uart_readb(HOST_UART);
 
+    // Now we want to protect against readback overreach, meaning that we overreach what we really should be reading back. You asked for Fw, were ONLY going to give you FW
     // Read out the data
-    uart_write(HOST_UART, (uint8_t *)address, size);
+
+    if(region == 'F'){
+        if(size <= *((uint32_t *)FIRMWARE_SIZE_PTR)){
+            // its not in danger of any overreach
+            uart_write(HOST_UART, (uint8_t *)address, size);
+        } else {
+            // its in danger of overreach, so we will fill the potential overreach with 0xFF
+            uart_write(HOST_UART, (uint8_t *)address, *((uint32_t *)FIRMWARE_SIZE_PTR));
+            // for the remaining bits we send 0xFF
+            for(int i = 0; i < (size - *((uint32_t *)FIRMWARE_SIZE_PTR)); i++){
+                uart_writeb(HOST_UART, 0xFF);
+            }
+        }
+    } else {
+        if(size <= *((uint32_t *)CONFIGURATION_SIZE_PTR)){
+            // its not in danger of any overreach
+            uart_write(HOST_UART, (uint8_t *)address, size);
+        } else {
+            // its in danger of overreach, so we will fill the potential overreach with 0xFF
+            uart_write(HOST_UART, (uint8_t *)address, *((uint32_t *)CONFIGURATION_SIZE_PTR));
+            // for the remaining bits we send 0xFF
+            for(int i = 0; i < (size - *((uint32_t *)CONFIGURATION_SIZE_PTR)); i++){
+                uart_writeb(HOST_UART, 0xFF);
+            }
+        }
+    }
+    
 }
 
 /**
