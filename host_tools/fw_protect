@@ -24,11 +24,11 @@ def protect_firmware(firmware_file: Path, version: int, release_message: str, pr
     print_banner("SAFFIRe Firmware Protect Tool")
 
     # Read in the raw firmware binary
-    log.info("Reading the firmware...\n")
+    log.info("Reading the firmware...")
     firmware_data = firmware_file.read_bytes()
 
     # Encrypt the firmware
-    log.info("Encrypting the firmware...\n")
+    log.info("Encrypting the firmware...")
 
     # Set the crypto information
     key = Path("/secrets/key").read_bytes()
