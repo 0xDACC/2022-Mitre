@@ -209,26 +209,26 @@ void handle_readback(void)
     // Read out the data
 
     if(region == 'F'){
-        if(size <= *((uint32_t *)FIRMWARE_SIZE_PTR)){
+        if(size <= 16385){
             // its not in danger of any overreach
             uart_write(HOST_UART, (uint8_t *)address, size);
         } else {
             // its in danger of overreach, so we will fill the potential overreach with 0xFF
-            uart_write(HOST_UART, (uint8_t *)address, *((uint32_t *)FIRMWARE_SIZE_PTR) - 16);
-            // for the remaining bits we send 0xFF
-            for(int i = 0; i < (size - *((uint32_t *)FIRMWARE_SIZE_PTR)) + 16; i++){
+            uart_write(HOST_UART, (uint8_t *)address, 16385);
+            // for the remaining bytes we send 0xFF
+            for(int i = 0; i < size - 16385; i++){
                 uart_writeb(HOST_UART, 0xFF);
             }
         }
     } else {
-        if(size <= *((uint32_t *)CONFIGURATION_SIZE_PTR)){
+        if(size <= 65535){
             // its not in danger of any overreach
             uart_write(HOST_UART, (uint8_t *)address, size);
         } else {
             // its in danger of overreach, so we will fill the potential overreach with 0xFF
-            uart_write(HOST_UART, (uint8_t *)address, *((uint32_t *)CONFIGURATION_SIZE_PTR));
-            // for the remaining bits we send 0xFF
-            for(int i = 0; i < (size - *((uint32_t *)CONFIGURATION_SIZE_PTR)); i++){
+            uart_write(HOST_UART, (uint8_t *)address, 65535);
+            // for the remaining bytes we send 0xFF
+            for(int i = 0; i < size - 65535; i++){
                 uart_writeb(HOST_UART, 0xFF);
             }
         }
