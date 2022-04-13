@@ -89,13 +89,13 @@ def readback(socket_number, region, num_bytes):
             cipher = AES.new(key, AES.MODE_CBC, iv)
             
             # padding data for decryption
-            padded_fw = fw + (b'\xFF' * ((16 - len(fw) % 16) % 16))
+            padded_fw = fw + (b'\xFF' * ((16 - len(fw) % 16)))
 
             # Decrypt it
             decrypted_firmware = cipher.decrypt(padded_fw)
 
             # Clip off the padding 
-            clipped_firmware = decrypted_firmware[0:len(fw)]
+            clipped_firmware = decrypted_firmware
 
             # print it
             print(f"{clipped_firmware.hex()}")
