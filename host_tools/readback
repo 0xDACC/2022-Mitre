@@ -72,6 +72,10 @@ def readback(socket_number, region, num_bytes):
             return
 
         # Send the number of bytes to read
+        if region == "configuration":
+            # Yes this is a little inefficient but oh well
+            pbytes = num_bytes
+        
         size = int.to_bytes(pbytes, 4, "big")
         sock.send(size)
 
@@ -103,9 +107,9 @@ def readback(socket_number, region, num_bytes):
             # print it
             print(f"{clipped_firmware.hex()}")
         else:
-            # if its config then its not gonna be encrypted so we can skip all the decryption and just clip it
-            clipped_fw = fw[0:num_bytes]
-            print(f"{clipped_fw.hex()}")
+            # Since p bytes was set to num bytes, it should be ready to go here, no clipping needed.
+            # idk why it wont let me just not decrypt it but somewhere theres a bug :)
+            print(f"{fw.hex()}")
 
 
 def main():
