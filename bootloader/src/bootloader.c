@@ -454,7 +454,7 @@ void handle_configure(void)
         // Decrypt the combined thing
         struct AES_ctx config_ctx;
         AES_init_ctx(&config_ctx, key);
-        AES_ECB_decrypt_buffer(&config_ctx, frame_buffer, 1040);
+        AES_ECB_decrypt(&config_ctx, frame_buffer);
 
         // check password
         for(i = 0; i < 16; i++){
