@@ -417,7 +417,6 @@ void handle_update(void)
  */
 void handle_configure(void)
 {
-    int i;
     uint32_t size = 0;
     uint8_t frame_buffer[1040];
     uint32_t dst = CONFIGURATION_STORAGE_PTR;
@@ -454,9 +453,11 @@ void handle_configure(void)
         // Decrypt the combined thing
         struct AES_ctx config_ctx;
         AES_init_ctx(&config_ctx, key);
-        AES_ECB_decrypt(&config_ctx, frame_buffer);
+        // decrypt all 65 blocks of the buffer
+        for(int i = 0; i < 65; i++){
+            AES_ECB_decrypt(&config_ctx, frame_buffer + 16 * i);
+        }
 
-        /*
         // check password
         for(i = 0; i < 16; i++){
             if(frame_buffer[i+FLASH_PAGE_SIZE] != password[i]){
@@ -466,7 +467,6 @@ void handle_configure(void)
                 return;
             }
         }
-        */
 
         // acknowledge
         uart_writeb(HOST_UART, FRAME_OK);
