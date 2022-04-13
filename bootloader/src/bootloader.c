@@ -459,7 +459,7 @@ void handle_configure(void)
         }
 
         // check password
-        for(i = 0; i < 16; i++){
+        for(int i = 0; i < 16; i++){
             if(frame_buffer[i+FLASH_PAGE_SIZE] != password[i]){
                 // Bad frame password
                 uart_writeb(HOST_UART, FRAME_BAD);
