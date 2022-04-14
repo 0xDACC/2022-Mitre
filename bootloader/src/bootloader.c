@@ -113,8 +113,10 @@ void handle_boot(void)
 
     // Decrypt
     struct AES_ctx newfirmware_ctx;
-    AES_init_ctx_iv(&newfirmware_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&newfirmware_ctx, (uint8_t *)(LONG_BUFFER_START_PTR), size);
+    AES_init_ctx(&newfirmware_ctx, key);
+    for(i = 0; i < size / 16; i++){
+        AES_ECB_decrypt(&newfirmware_ctx, (uint8_t *)(LONG_BUFFER_START_PTR));
+    }
 
     // check password
     for(i = 0; i < 16; i++){
@@ -293,7 +295,7 @@ void load_firmware(uint32_t interface, uint32_t size){
     // encrypt again for storage on the flash
     struct AES_ctx refirmware_ctx;
     AES_init_ctx(&refirmware_ctx, key);
-    for(i = 0; i < 16; i++){
+    for(i = 0; i < size / 16; i++){
         AES_ECB_encrypt(&refirmware_ctx, (uint8_t *)(LONG_BUFFER_START_PTR) + (i * 16));
     }
 

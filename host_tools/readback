@@ -93,7 +93,7 @@ def readback(socket_number, region, num_bytes):
 
         if region == "firmware":
             # New aes object
-            cipher = AES.new(key, AES.MODE_CBC, iv)
+            cipher = AES.new(key, AES.MODE_ECB)
 
             # Note: the data is 'pre-padded'
             # it has extra data that we didnt ask for, just for encryption purposes
