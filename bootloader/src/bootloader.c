@@ -387,6 +387,7 @@ void handle_update(void)
 void handle_configure(void)
 {
     uint32_t size = 0;
+    uint8_t pbuff[16];
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
@@ -401,13 +402,12 @@ void handle_configure(void)
     uart_writeb(HOST_UART, FRAME_OK);
 
     // Recieve first password to check
-    uint8_t pbuff[16];
     uart_read(HOST_UART, pbuff, 16);
 
     // Decrypt password
     struct AES_ctx firstpass_ctx;
     AES_init_ctx_iv(&firstpass_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firstpass_ctx, pbuff, 32);
+    AES_CBC_decrypt_buffer(&firstpass_ctx, pbuff, 16);
 
     // check password
     for(int i = 0; i < 16; i++){
@@ -429,7 +429,7 @@ void handle_configure(void)
     uart_read(HOST_UART, pbuff, 16);
 
     // check password
-    for(int i = 0; i<16; i++){
+    for(int i = 0; i < 16; i++){
        if (password[i] != pbuff[i]){
             // Version Number is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
@@ -455,6 +455,9 @@ void handle_configure(void)
             return;
         }
     }
+
+    // acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
 
     // Clear firmware metadata
     flash_erase_page(CONFIGURATION_METADATA_PTR);
