@@ -44,7 +44,7 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
 
     # encrypt
     cipher = AES.new(key, AES.MODE_CBC, iv)
-    encrypted_cfg = cipher.encrypt(config)
+    encrypted_cfg = cipher.encrypt(padded_cfg)
 
     log.info("Packaging the configuration...")
 
