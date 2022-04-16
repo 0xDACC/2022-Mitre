@@ -82,7 +82,7 @@ def update_firmware(socket_number: int, firmware_file: Path):
         send_packets(sock, dec_fw[-16:])
 
         # Send firmware, not including password
-        send_packets(sock, dec_fw[:-16])
+        send_packets(sock, dec_fw[16:-16])
         log.info("Firmware updated\n")
 
 
