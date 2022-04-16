@@ -251,6 +251,7 @@ void handle_update(void)
 {
     int i;
     uint8_t vbuff[32];  // 8 bit array that will hold the version for decryption
+    uint8_t pbuff[16];
     uint32_t version = 0;
     uint32_t size = 0;
     uint32_t rel_msg_size = 0;
@@ -277,10 +278,6 @@ void handle_update(void)
     AES_init_ctx_iv(&version_ctx, key, iv);
     AES_CBC_decrypt_buffer(&version_ctx, vbuff, 32);
 
-    // since the version can actually take up to 16 bits we need to turn the two 8 bit bytes into one larger byte
-    version = vbuff[0] << 8;
-    version |= vbuff[1];
-
     // Check for password
     for(i = 0; i<16; i++){
        if (password[i] != vbuff[16+i]){
@@ -297,10 +294,12 @@ void handle_update(void)
         return;
     }
 
+    // since the version can actually take up to 16 bits we need to turn the two 8 bit bytes into one larger byte
+    version = vbuff[0] << 8;
+    version |= vbuff[1];
+
     //Acknowledge
     uart_writeb(HOST_UART, FRAME_OK);
-
-    uint8_t pbuff[16];
 
     // get first password frame
     uart_read(HOST_UART, pbuff, 16);
@@ -328,6 +327,11 @@ void handle_update(void)
 
     // recieve the decrypted ending password and double check
     uart_read(HOST_UART, pbuff, 16);
+
+    // Decrypt password
+    struct AES_ctx secondpass_ctx;
+    AES_init_ctx_iv(&secondpass_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&secondpass_ctx, pbuff, 32);    
 
     // check password
     for(i = 0; i<16; i++){
@@ -378,9 +382,6 @@ void handle_update(void)
         rem_bytes += 4 - (rem_bytes % 4); // Account for partial word
     }
     flash_write((uint32_t *)rel_msg_read_ptr, rel_msg_write_ptr, rem_bytes >> 2);
-
-    //Acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
 }
 
 /**
