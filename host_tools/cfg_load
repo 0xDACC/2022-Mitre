@@ -7,6 +7,7 @@
 # Loads the config. This tool meets all functional and security requirements
 
 import argparse
+from distutils.command.config import config
 import logging
 from pathlib import Path
 import socket
@@ -49,18 +50,8 @@ def load_configuration(socket_number: int, config_file: Path):
 
         log.info("Sending configuration...")
 
-        # 1040 because its 1024 bytes of data + 16 byte password
-        for i in range(0, int(len(configuration)/1040)):
-            frame = configuration[i*1040:(i+1)*1040]
-            dataframe = frame[:-16]
-            passframe= frame[-16:]
-
-            send_packets(sock, dataframe) # data
-
-            send_packets(sock, passframe) # password for that frame
-            response = sock.recv(1)
-            if response != RESP_OK:
-                exit(f"ERROR: Bad password on Frame {i}! Bootloader responded with {repr(response)}")
+        # Sending first password section
+        sock.send(configuration)
 
         log.info("Firmware configured\n")
 

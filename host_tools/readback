@@ -28,9 +28,7 @@ def readback(socket_number, region, num_bytes):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         password = Path("/secrets/password").read_bytes()
         key = Path("/secrets/key").read_bytes()
-        iv = Path("/secrets/iv").read_bytes()
-
-        pbytes = num_bytes + (16 - num_bytes % 16)  
+        iv = Path("/secrets/iv").read_bytes() 
 
         sock.connect(("saffire-net", socket_number))
 
@@ -71,18 +69,14 @@ def readback(socket_number, region, num_bytes):
             sock.send(b"Q")
             return
 
-        # Send the number of bytes to read
-        if region == "configuration":
-            # Yes this is a little inefficient but oh well
-            pbytes = num_bytes
-        
-        size = int.to_bytes(pbytes, 4, "big")
+        # number of bytes to send
+        size = int.to_bytes(num_bytes, 4, "big")
         sock.send(size)
 
         # Receive firmware data
         log.info("Receiving firmware...")
-        bytes_remaining = pbytes
-        nbytes = pbytes
+        bytes_remaining = num_bytes
+        nbytes = num_bytes
         fw = b""
         while bytes_remaining > 0:
             nbytes = 4096 if bytes_remaining > 4096 else bytes_remaining
@@ -91,25 +85,7 @@ def readback(socket_number, region, num_bytes):
             fw += data
             bytes_remaining -= num_received
 
-        if region == "firmware":
-            # New aes object
-            cipher = AES.new(key, AES.MODE_ECB)
-
-            # Note: the data is 'pre-padded'
-            # it has extra data that we didnt ask for, just for encryption purposes
-
-            # Decrypt it
-            decrypted_firmware = cipher.decrypt(fw)
-
-            # Clip off the padding 
-            clipped_firmware = decrypted_firmware[0:num_bytes]
-
-            # print it
-            print(f"{clipped_firmware.hex()}")
-        else:
-            # Since p bytes was set to num bytes, it should be ready to go here, no clipping needed.
-            # idk why it wont let me just not decrypt it but somewhere theres a bug :)
-            print(f"{fw.hex()}")
+        print(f"{fw.hex()}")
 
 
 def main():

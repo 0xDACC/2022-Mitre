@@ -103,28 +103,18 @@ void handle_boot(void)
         uart_writeb(HOST_UART, FRAME_BAD);
     }
 
-    // Copy the firmware JUST before the boot ram section, so it can be decrypted and checked for authenticity
-    // We need to copy this 16 bytes ahead because we can only use exactly 16kb of RAM for the firmware, and we have the extra 16 bytes of password
-    // used for authentication. we need to basically copy this to the long buffer location and decrypt it, then check it, and then move it back to the correct location
-    // if we dont move it to exctly 0x20004000 it messes with the firmware in unpredictable ways
-    for (i = 0; i < size; i++) {
-        *((uint8_t *)(LONG_BUFFER_START_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
-    }
-
-    // Decrypt
-    struct AES_ctx newfirmware_ctx;
-    AES_init_ctx(&newfirmware_ctx, key);
-    for(i = 0; i < size / 16; i++){
-        AES_ECB_decrypt(&newfirmware_ctx, (uint8_t *)(LONG_BUFFER_START_PTR));
-    }
-
-    // check password
+    // check if password is present
     for(i = 0; i < 16; i++){
-        if(*((uint8_t *)(LONG_BUFFER_START_PTR + (size-16) + i)) != password[i]){
+        if(*((uint8_t *)(LONG_BUFFER_START_PTR + size - 16 + i)) != password[i]){
             // password is incorrect, so the firmware was tampered with
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
         }
+    }
+
+    // move firmware to boot, but dont include the password
+    for (i = 0; i < size-16; i++) {
+        *((uint8_t *)(FIRMWARE_STORAGE_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
     // acknowledge host
@@ -137,13 +127,6 @@ void handle_boot(void)
         rel_msg++;
     }
     uart_writeb(HOST_UART, '\0'); // Null terminator...
-
-    // Shift decrypted firmware forward in ram 16 bytes, moving back to front.
-    // Keep in mind that LONG_BUFFER_START is 16 bytes ahead of FIRMWARE_BOOT_PTR
-    for(i = size-16; i > 0; i--){
-        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(LONG_BUFFER_START_PTR + i));
-    }
-    
 
     // Execute the firmware
     void (*firmware)(void) = (void (*)(void))(FIRMWARE_BOOT_PTR + 1);
@@ -239,84 +222,36 @@ void handle_readback(void)
 }
 
 /**
- * @brief Load the firmware into flash storage
+ * @brief Read data from a UART interface and program to flash memory.
  * 
- * @param interface is the host uart to read from
- * @param size is the ammount of bytes to read
+ * @param interface is the base address of the UART interface to read from.
+ * @param dst is the starting page address to store the data.
+ * @param size is the number of bytes to load.
  */
-void load_firmware(uint32_t interface, uint32_t size){
+void load_data(uint32_t interface, uint32_t dst, uint32_t size)
+{
     int i;
-    int j;
     uint32_t frame_size;
     uint8_t page_buffer[FLASH_PAGE_SIZE];
-    uint32_t dst = FIRMWARE_STORAGE_PTR;
-    uint32_t pos = 0;
-    int32_t remaining = size;
 
-    // Fill the firmware buffer
-    while(remaining > 0) {
+    while(size > 0) {
         // calculate frame size
-        frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
+        frame_size = size > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : size;
         // read frame into buffer
         uart_read(HOST_UART, page_buffer, frame_size);
         // pad buffer if frame is smaller than the page
         for(i = frame_size; i < FLASH_PAGE_SIZE; i++) {
             page_buffer[i] = 0xFF;
         }
-        // add the page buffer to the firmware buffer
-        for(j = 0; j < frame_size; j++){
-            *((uint8_t *)(LONG_BUFFER_START_PTR + j + pos)) = page_buffer[j];
-        }
-        pos += FLASH_PAGE_SIZE;
-        remaining -= frame_size;
-        j = 0;
-
-        // Acknowledge the host
-        uart_writeb(HOST_UART, FRAME_OK);
-
-    }
-
-    // Decrypt
-    struct AES_ctx firmware_ctx;
-    AES_init_ctx(&firmware_ctx, key);
-    for(i = 0; i < size / 16; i++){
-        AES_ECB_decrypt(&firmware_ctx, (uint8_t *)(LONG_BUFFER_START_PTR) + (i * 16));
-    }
-
-    // Check signature
-    for(i = 0; i < 16; i++){
-        if(password[i] != *((uint8_t *)(LONG_BUFFER_START_PTR + ((size)-16) +i ))){
-            // Firmware is not signed with the correct password
-            uart_writeb(HOST_UART, FRAME_BAD);
-            return;
-        }
-    }
-
-    // encrypt again for storage on the flash
-    struct AES_ctx refirmware_ctx;
-    AES_init_ctx(&refirmware_ctx, key);
-    for(i = 0; i < size / 16; i++){
-        AES_ECB_encrypt(&refirmware_ctx, (uint8_t *)(LONG_BUFFER_START_PTR) + (i * 16));
-    }
-
-    remaining = size;
-    pos = 0;
-
-    // Save size
-    flash_write_word(size, FIRMWARE_SIZE_PTR);
-
-    // Write firmware to flash
-    while(remaining > 0) {
-        // calculate frame size
-        frame_size = remaining > FLASH_PAGE_SIZE ? FLASH_PAGE_SIZE : remaining;
         // clear flash page
         flash_erase_page(dst);
         // write flash page
-        flash_write((uint32_t *)(LONG_BUFFER_START_PTR + pos), dst, FLASH_PAGE_SIZE >> 2);
+        flash_write((uint32_t *)page_buffer, dst, FLASH_PAGE_SIZE >> 2);
         // next page and decrease size
         dst += FLASH_PAGE_SIZE;
-        remaining -= frame_size;
-        pos += frame_size;
+        size -= frame_size;
+        // send frame ok
+        uart_writeb(HOST_UART, FRAME_OK);
     }
 }
 
@@ -358,7 +293,7 @@ void handle_update(void)
     version |= vbuff[1];
 
     // Check for password
-   for(i = 0; i<16; i++){
+    for(i = 0; i<16; i++){
        if (password[i] != vbuff[16+i]){
             // Version Number is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
@@ -376,14 +311,55 @@ void handle_update(void)
     //Acknowledge
     uart_writeb(HOST_UART, FRAME_OK);
 
+    uint8_t pbuff[16];
+
+    // get first password frame
+    uart_read(HOST_UART, pbuff, 16);
+
+    // Decrypt password
+    struct AES_ctx firstpass_ctx;
+    AES_init_ctx_iv(&firstpass_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&firstpass_ctx, pbuff, 32);
+
+    // check password
+    for(i = 0; i<16; i++){
+       if (password[i] != pbuff[i]){
+            // Version Number is not signed with the correct password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
+    // acknowledge host
+    uart_writeb(HOST_UART, FRAME_OK);
+
+    // send crypto for use by host
+    uart_write(HOST_UART, key, 16);
+    uart_write(HOST_UART, iv, 16);
+
+    // recieve the decrypted ending password and double check
+    uart_read(HOST_UART, pbuff, 16);
+
+    // check password
+    for(i = 0; i<16; i++){
+       if (password[i] != pbuff[i]){
+            // Version Number is not signed with the correct password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
+    // acknowledge host
+    uart_writeb(HOST_UART, FRAME_OK);
+
     // Clear firmware metadata
     flash_erase_page(FIRMWARE_METADATA_PTR);
 
     //load firmware
-    load_firmware(HOST_UART, size);
+    load_data(HOST_UART, FIRMWARE_STORAGE_PTR, size);
 
     // Only save new version if it is not 0
-    if (version != 0) {
+    if(version != 0){
         flash_write_word(version, FIRMWARE_VERSION_PTR);
     }
     
@@ -424,9 +400,6 @@ void handle_update(void)
 void handle_configure(void)
 {
     uint32_t size = 0;
-    uint8_t frame_buffer[1040];
-    uint32_t dst = CONFIGURATION_STORAGE_PTR;
-    int32_t remaining;
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'C');
@@ -437,57 +410,54 @@ void handle_configure(void)
     size |= (((uint32_t)uart_readb(HOST_UART)) << 8);
     size |= ((uint32_t)uart_readb(HOST_UART));
 
-    remaining = size;   
+    // Recieve first password to check
+    uint8_t pbuff[16];
+    uart_read(HOST_UART, pbuff, 16);
+
+    // Decrypt password
+    struct AES_ctx firstpass_ctx;
+    AES_init_ctx_iv(&firstpass_ctx, key, iv);
+    AES_CBC_decrypt_buffer(&firstpass_ctx, pbuff, 32);
+
+    // check password
+    for(int i = 0; i < 16; i++){
+       if (password[i] != pbuff[i]){
+            // Version Number is not signed with the correct password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
+    // acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
+
+    // send crypto for host use
+    uart_write(HOST_UART, key, 16);
+    uart_write(HOST_UART, iv, 16);
+
+    // recieve the decrypted ending password and double check
+    uart_read(HOST_UART, pbuff, 16);
+
+    // check password
+    for(int i = 0; i<16; i++){
+       if (password[i] != pbuff[i]){
+            // Version Number is not signed with the correct password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
+    // acknowledge host
+    uart_writeb(HOST_UART, FRAME_OK);
+
+    // Clear firmware metadata
+    flash_erase_page(CONFIGURATION_METADATA_PTR);
+
+    //load firmware
+    load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size);
 
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
-
-    // recieve the frame, receive the password, combine, decrypt, store in flash, rinse and repeat until we are done with the load.
-    while(remaining > 0){
-        // Data frame
-        uart_read(HOST_UART, frame_buffer, FLASH_PAGE_SIZE);
-
-        // acknowledge
-        uart_writeb(HOST_UART, FRAME_OK);
-
-        // password frame
-        uart_read(HOST_UART, (uint8_t *)&frame_buffer[FLASH_PAGE_SIZE], 16);
-
-        // acknowledge
-        uart_writeb(HOST_UART, FRAME_OK);
-
-        // Decrypt the combined thing
-        struct AES_ctx config_ctx;
-        AES_init_ctx(&config_ctx, key);
-        // decrypt all 65 blocks of the buffer
-        for(int i = 0; i < 65; i++){
-            AES_ECB_decrypt(&config_ctx, frame_buffer + 16 * i);
-        }
-
-        // check password
-        for(int i = 0; i < 16; i++){
-            if(frame_buffer[i+FLASH_PAGE_SIZE] != password[i]){
-                // Bad frame password
-                uart_writeb(HOST_UART, FRAME_BAD);
-                // and exit before we write this frame.
-                return;
-            }
-        }
-
-        // acknowledge
-        uart_writeb(HOST_UART, FRAME_OK);
-
-        // write data frame to the flash
-        flash_erase_page(dst);
-        flash_write((uint32_t *)frame_buffer, dst, FLASH_PAGE_SIZE >> 2);
-
-        dst += FLASH_PAGE_SIZE;
-        remaining -= 1040;
-        // For each 1KB of actual config data there will be an extra 16 bytes of password which was counted in the overall size
-        // So for each time this loop runs we subtract 16 bytes from the size calculation
-        size -= 16;
-        
-    }
 
     // and after all that we will know the true size of the config, so we can now write it
     flash_write_word(size, CONFIGURATION_SIZE_PTR);

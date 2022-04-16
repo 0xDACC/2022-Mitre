@@ -41,10 +41,10 @@ def protect_firmware(firmware_file: Path, version: int, release_message: str, pr
     padded_firmware += (b'\xFF' * ((16 - len(firmware_data) % 16) % 16))
 
     # Add the password as a signature for the bootloader to check
-    padded_firmware += password
+    padded_firmware = password + padded_firmware + password
 
     # creating new aes object. We can only use this object once
-    cipher = AES.new(key, AES.MODE_ECB)
+    cipher = AES.new(key, AES.MODE_CBC, iv)
 
     # encrypt() returns a byte string e.g. b'0123456789abcdef'
     encrypted_firmware = cipher.encrypt(padded_firmware)

@@ -10,6 +10,7 @@
 # Authentication and integrity combined into one step! Now that's efficient!
 
 import argparse
+from distutils.command.config import config
 import logging
 from pathlib import Path
 from Crypto.Cipher import AES
@@ -38,25 +39,12 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
     padded_cfg = file_data
     padded_cfg += (b'\xFF' * ((1024 - len(file_data) % 1024) % 1024))
 
-    # string which will hold the completed cfg protect file
-    encrypted_cfg = b''
+    # add passwords
+    padded_cfg = password + padded_cfg + password
 
-    # Now we split the padded config by every 1kb and do two things: 1) pack password to end of 1kb section, 2)encrypt each 1kb section
-    for i in range(0, int((len(padded_cfg) / 1024))):
-        # Slice into 1kb frames
-        frame = padded_cfg[(i*1024):((i+1)*1024)]
-
-        # Add password
-        frame += password
-
-        # creating new aes object.
-        cipher = AES.new(key, AES.MODE_ECB)
-
-        # encrypt
-        enc_frame = cipher.encrypt(frame)
-
-        #combine
-        encrypted_cfg += enc_frame
+    # encrypt
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    encrypted_cfg = cipher.encrypt(config)
 
     log.info("Packaging the configuration...")
 
