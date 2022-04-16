@@ -397,6 +397,9 @@ void handle_configure(void)
     size |= (((uint32_t)uart_readb(HOST_UART)) << 8);
     size |= ((uint32_t)uart_readb(HOST_UART));
 
+    // Acknowledge the host
+    uart_writeb(HOST_UART, FRAME_OK);
+
     // Recieve first password to check
     uint8_t pbuff[16];
     uart_read(HOST_UART, pbuff, 16);
@@ -437,14 +440,27 @@ void handle_configure(void)
     // acknowledge host
     uart_writeb(HOST_UART, FRAME_OK);
 
+    // send crypto for host use
+    uart_write(HOST_UART, key, 16);
+    uart_write(HOST_UART, iv, 16);
+
+    // Second password!
+    uart_read(HOST_UART, pbuff, 16);
+
+    // check password
+    for(int i = 0; i < 16; i++){
+       if (password[i] != pbuff[i]){
+            // Version Number is not signed with the correct password
+            uart_writeb(HOST_UART, FRAME_BAD);
+            return;
+        }
+    }
+
     // Clear firmware metadata
     flash_erase_page(CONFIGURATION_METADATA_PTR);
 
     //load firmware
-    load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size);
-
-    // Acknowledge the host
-    uart_writeb(HOST_UART, FRAME_OK);
+    load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size-32);
 
     // and after all that we will know the true size of the config, so we can now write it
     flash_write_word(size, CONFIGURATION_SIZE_PTR);
