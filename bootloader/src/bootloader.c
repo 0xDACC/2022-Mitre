@@ -344,7 +344,9 @@ void handle_update(void)
     flash_erase_page(FIRMWARE_METADATA_PTR);
 
     //load firmware
-    load_data(HOST_UART, FIRMWARE_STORAGE_PTR, size);
+    load_data(HOST_UART, FIRMWARE_STORAGE_PTR, size-32);
+
+    size -= 32;
 
     // Only save new version if it is not 0
     if(version != 0){
