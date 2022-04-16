@@ -328,11 +328,6 @@ void handle_update(void)
     // recieve the decrypted ending password and double check
     uart_read(HOST_UART, pbuff, 16);
 
-    // Decrypt password
-    struct AES_ctx secondpass_ctx;
-    AES_init_ctx_iv(&secondpass_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&secondpass_ctx, pbuff, 32);    
-
     // check password
     for(i = 0; i<16; i++){
        if (password[i] != pbuff[i]){
