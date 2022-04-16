@@ -69,8 +69,6 @@
 #define IV_OFFSET_PTR           ((uint32_t)EEPROM_START_PTR + 16)
 #define PASSWORD_OFFSET_PTR     ((uint32_t)EEPROM_START_PTR + 32)
 
-// The longest buffer we will need will be stored at this address. 16KB + 16B, used for loading an entire firmware image + authentication password
-#define LONG_BUFFER_START_PTR   ((uint32_t)0x20003FE0)
 
 // 32 bit arrays for reading from eeprom
 uint32_t key32[4];
@@ -97,19 +95,10 @@ void handle_boot(void)
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
     
-    // If the size is -1 then we know that there has not been a firmware installed
+    // If the size is -1 then we know that there has not been a firmware installed, or something was tampered with
     if(size == 0xFFFFFFFF){
         //no firmware installed
         uart_writeb(HOST_UART, FRAME_BAD);
-    }
-
-    // check if password is present
-    for(i = 0; i < 16; i++){
-        if(*((uint8_t *)(LONG_BUFFER_START_PTR + size - 16 + i)) != password[i]){
-            // password is incorrect, so the firmware was tampered with
-            uart_writeb(HOST_UART, FRAME_BAD);
-            return;
-        }
     }
 
     // move firmware to boot, but dont include the password
