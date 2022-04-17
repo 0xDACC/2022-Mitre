@@ -57,18 +57,28 @@ def load_configuration(socket_number: int, config_file: Path):
             exit(f"ERROR: Bad password. Bootloader responded with {repr(response)}")
         
         # Recieve crypto information
+        log.info("recieving key")
         key = sock.recv(16)
+        log.info("recieving iv")
         iv = sock.recv(16)
 
         # Dencrypt
+        log.info("decrytpting")
         cip = AES.new(key, AES.MODE_CBC, iv)
         decrypted_cfg = cip.decrypt(configuration)
 
         # send second password for verification
+        log.info("sending second password")
         send_packets(sock, decrypted_cfg[-16:])
 
         # send rest of data
+        log.info("")
         send_packets(sock, decrypted_cfg[16:-16])
+
+        # wait for bootloader to finish
+        response = sock.recv(1)
+        if response != RESP_OK:
+            exit(f"ERROR: Bootloader responded with {repr(response)}")
         log.info("Firmware configured\n")
 
 

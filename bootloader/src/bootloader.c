@@ -469,6 +469,9 @@ void handle_configure(void)
 
     // and after all that we will know the true size of the config, so we can now write it
     flash_write_word(size, CONFIGURATION_SIZE_PTR);
+
+    // acknowledge
+    uart_writeb(HOST_UART, FRAME_OK);
 }
 
 /**
