@@ -442,10 +442,6 @@ void handle_configure(void)
     // acknowledge host
     uart_writeb(HOST_UART, FRAME_OK);
 
-    // send crypto for host use
-    uart_write(HOST_UART, key, 16);
-    uart_write(HOST_UART, iv, 16);
-
     // Second password!
     uart_read(HOST_UART, pbuff, 16);
 
@@ -466,6 +462,8 @@ void handle_configure(void)
 
     //load firmware
     load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size-32);
+
+    size -= 32;
 
     // and after all that we will know the true size of the config, so we can now write it
     flash_write_word(size, CONFIGURATION_SIZE_PTR);

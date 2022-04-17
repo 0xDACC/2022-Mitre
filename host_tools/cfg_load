@@ -51,6 +51,7 @@ def load_configuration(socket_number: int, config_file: Path):
         log.info("Sending configuration...")
 
         # Sending first password section
+        log.info("sending first password")
         sock.send(configuration[0:16])
         response = sock.recv(1)
         if response != RESP_OK:
