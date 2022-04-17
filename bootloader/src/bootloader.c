@@ -249,7 +249,6 @@ void load_data(uint32_t interface, uint32_t dst, uint32_t size)
  */
 void handle_update(void)
 {
-    int i;
     uint8_t vbuff[32];  // 8 bit array that will hold the version for decryption
     uint8_t pbuff[16];
     uint32_t version = 0;
@@ -279,7 +278,7 @@ void handle_update(void)
     AES_CBC_decrypt_buffer(&version_ctx, vbuff, 32);
 
     // Check for password
-    for(i = 0; i<16; i++){
+    for(int i = 0; i<16; i++){
        if (password[i] != vbuff[16+i]){
             // Version Number is not signed with the correct password
             uart_writeb(HOST_UART, FRAME_BAD);
@@ -307,12 +306,12 @@ void handle_update(void)
     // Decrypt password
     struct AES_ctx firstpass_ctx;
     AES_init_ctx_iv(&firstpass_ctx, key, iv);
-    AES_CBC_decrypt_buffer(&firstpass_ctx, pbuff, 32);
+    AES_CBC_decrypt_buffer(&firstpass_ctx, pbuff, 16);
 
     // check password
-    for(i = 0; i<16; i++){
+    for(int i = 0; i<16; i++){
        if (password[i] != pbuff[i]){
-            // Version Number is not signed with the correct password
+            // incorrect password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
         }
@@ -329,9 +328,9 @@ void handle_update(void)
     uart_read(HOST_UART, pbuff, 16);
 
     // check password
-    for(i = 0; i<16; i++){
+    for(int i = 0; i<16; i++){
        if (password[i] != pbuff[i]){
-            // Version Number is not signed with the correct password
+           // wrong password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
         }
