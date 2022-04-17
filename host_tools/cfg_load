@@ -65,7 +65,7 @@ def load_configuration(socket_number: int, config_file: Path):
         decrypted_cfg = cip.decrypt(configuration)
 
         # send second password for verification
-        send_packets(sock, decrypted_cfg[:-16])
+        send_packets(sock, decrypted_cfg[-16:])
 
         # send rest of data
         send_packets(sock, decrypted_cfg[16:-16])
