@@ -71,18 +71,29 @@ def update_firmware(socket_number: int, firmware_file: Path):
         send_packets(sock, firmware[0:16])
         
         # recieve crypto information
+        log.info("recieving key")
         key = sock.recv(16)
+        log.info("recieving iv")
         iv = sock.recv(16)
 
         # Decrypt
+        log.info("decrypting")
         cip = AES.new(key, AES.MODE_CBC, iv)
         dec_fw = cip.decrypt(firmware)
 
         # Send last password to bootloader to decide if this is a valid image
+        log.info("sending second password")
         send_packets(sock, dec_fw[-16:])
 
         # Send firmware, not including password
+        log.info("sending firmware")
         send_packets(sock, dec_fw[16:-16])
+
+        # wait for bootloader to finish
+        log.info("waiting for bootloader to finish")
+        response = sock.recv(1)
+        if response == b'\x01':
+            exit(f"ERROR: Bootloader responded with {repr(response)}")
         log.info("Firmware updated\n")
 
 

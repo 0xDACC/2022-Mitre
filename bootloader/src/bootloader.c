@@ -378,6 +378,9 @@ void handle_update(void)
         rem_bytes += 4 - (rem_bytes % 4); // Account for partial word
     }
     flash_write((uint32_t *)rel_msg_read_ptr, rel_msg_write_ptr, rem_bytes >> 2);
+
+    // acknowledge host
+    uart_writeb(HOST_UART, FRAME_OK);
 }
 
 /**
