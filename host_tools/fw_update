@@ -50,6 +50,10 @@ def update_firmware(socket_number: int, firmware_file: Path):
         while sock.recv(1) != b"U":
             pass
 
+        # Wait until bootloader sends second confirmation because sometimes an extra byte is send
+        while sock.recv(1) != RESP_OK:
+            pass
+
         # Send the version, size, and release message
         log.info("Sending version, size, and release message...")
         # Send the encrypted version number

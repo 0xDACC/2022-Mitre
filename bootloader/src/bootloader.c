@@ -258,6 +258,9 @@ void handle_update(void)
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'U');
+    
+    // Catch second byte
+    uart_writeb(HOST_UART, FRAME_OK);
     // Receive version, store in buffer for decryption
     uart_read(HOST_UART, vbuff, 32);
     // Acknowledge
@@ -392,7 +395,10 @@ void handle_configure(void)
     uint8_t pbuff[16];
 
     // Acknowledge the host
-    uart_writeb(HOST_UART, 'C');
+    uart_writeb(HOST_UART, 'U');
+    
+    // Catch second byte
+    uart_writeb(HOST_UART, FRAME_OK);
 
     // Receive size
     size = (((uint32_t)uart_readb(HOST_UART)) << 24);

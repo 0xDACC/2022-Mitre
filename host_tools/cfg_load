@@ -40,6 +40,10 @@ def load_configuration(socket_number: int, config_file: Path):
         while sock.recv(1) != b"C":
             pass
 
+        # Wait until bootloader sends second confirmation because sometimes an extra byte is send
+        while sock.recv(1) != RESP_OK:
+            pass
+
         # Send the size
         log.info("Sending the size...")
         payload = struct.pack(">I", size)
