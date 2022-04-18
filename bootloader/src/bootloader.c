@@ -409,7 +409,7 @@ void handle_configure(void)
     // Acknowledge the host
     uart_writeb(HOST_UART, FRAME_OK);
 
-    // Recieve first password to check
+    // get first password frame
     uart_read(HOST_UART, pbuff, 16);
 
     // Decrypt password
@@ -418,28 +418,9 @@ void handle_configure(void)
     AES_CBC_decrypt_buffer(&firstpass_ctx, pbuff, 16);
 
     // check password
-    for(int i = 0; i < 16; i++){
+    for(int i = 0; i<16; i++){
        if (password[i] != pbuff[i]){
-            // Version Number is not signed with the correct password
-            uart_writeb(HOST_UART, FRAME_BAD);
-            return;
-        }
-    }
-
-    // acknowledge
-    uart_writeb(HOST_UART, FRAME_OK);
-
-    // send crypto for host use
-    uart_write(HOST_UART, key, 16);
-    uart_write(HOST_UART, iv, 16);
-
-    // recieve the decrypted ending password and double check
-    uart_read(HOST_UART, pbuff, 16);
-
-    // check password
-    for(int i = 0; i < 16; i++){
-       if (password[i] != pbuff[i]){
-            // Version Number is not signed with the correct password
+            // incorrect password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
         }
@@ -448,19 +429,23 @@ void handle_configure(void)
     // acknowledge host
     uart_writeb(HOST_UART, FRAME_OK);
 
-    // Second password!
+    // send crypto for use by host
+    uart_write(HOST_UART, key, 16);
+    uart_write(HOST_UART, iv, 16);
+
+    // recieve the decrypted ending password and double check
     uart_read(HOST_UART, pbuff, 16);
 
     // check password
-    for(int i = 0; i < 16; i++){
+    for(int i = 0; i<16; i++){
        if (password[i] != pbuff[i]){
-            // Version Number is not signed with the correct password
+           // wrong password
             uart_writeb(HOST_UART, FRAME_BAD);
             return;
         }
     }
 
-    // acknowledge
+    // acknowledge host
     uart_writeb(HOST_UART, FRAME_OK);
 
     // Clear firmware metadata

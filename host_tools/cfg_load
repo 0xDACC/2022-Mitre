@@ -52,36 +52,37 @@ def load_configuration(socket_number: int, config_file: Path):
         if response != RESP_OK:
             exit(f"ERROR: Bootloader responded with {repr(response)}")
 
-        log.info("Sending configuration...")
+        # Send packets
+        log.info("Sending firmware packets...")
 
-        # Sending first password section
-        log.info("sending first password")
+        # Send first password section
         send_packets(sock, configuration[0:16])
         
-        # Recieve crypto information
+        # recieve crypto information
         log.info("recieving key")
         key = sock.recv(16)
         log.info("recieving iv")
         iv = sock.recv(16)
 
-        # Dencrypt
-        log.info("decrytpting")
+        # Decrypt
+        log.info("decrypting")
         cip = AES.new(key, AES.MODE_CBC, iv)
-        decrypted_cfg = cip.decrypt(configuration)
+        dec_fw = cip.decrypt(configuration)
 
-        # send second password for verification
+        # Send last password to bootloader to decide if this is a valid image
         log.info("sending second password")
-        send_packets(sock, decrypted_cfg[-16:])
+        send_packets(sock, dec_fw[-16:])
 
-        # send rest of data
-        log.info("sending rest of data")
-        send_packets(sock, decrypted_cfg[16:-16])
+        # Send firmware, not including password
+        log.info("sending firmware")
+        send_packets(sock, dec_fw[16:-16])
 
         # wait for bootloader to finish
+        log.info("waiting for bootloader to finish")
         response = sock.recv(1)
         if response != RESP_OK:
             exit(f"ERROR: Bootloader responded with {repr(response)}")
-        log.info("Firmware configured\n")
+        log.info("Firmware updated\n")
 
 
 def main():
