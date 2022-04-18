@@ -49,7 +49,7 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
     log.info("Packaging the configuration...")
 
     # Write to the output file
-    protected_cfg.write_bytes(encrypted_cfg.hex())
+    protected_cfg.write_bytes(encrypted_cfg)
 
     log.info("Configuration protected\n")
 
