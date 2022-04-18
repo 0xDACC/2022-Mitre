@@ -41,7 +41,7 @@ def load_configuration(socket_number: int, config_file: Path):
             pass
 
         # Wait until bootloader sends second confirmation because sometimes an extra byte is send
-        while sock.recv(1) != RESP_OK:
+        while sock.recv(1) != b"G":
             pass
 
         # Send the size
