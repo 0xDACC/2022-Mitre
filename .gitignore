@@ -21,7 +21,8 @@ socks
 *.o
 *.ko
 *.obj
-
+*.elf
+*.deleteme
 
 # Linker output
 *.ilk
@@ -364,3 +365,8 @@ cython_debug/
 #.idea/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,c,c++,git,pycharm
+
+firmware/example_fw.prot
+configuration/example_cfg.prot
+dillon-bootloader.elf.deleteme
+dillon-bl_image.bin.deleteme

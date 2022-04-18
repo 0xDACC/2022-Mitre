@@ -92,7 +92,7 @@ def update_firmware(socket_number: int, firmware_file: Path):
         # wait for bootloader to finish
         log.info("waiting for bootloader to finish")
         response = sock.recv(1)
-        if response == b'\x01':
+        if response != RESP_OK:
             exit(f"ERROR: Bootloader responded with {repr(response)}")
         log.info("Firmware updated\n")
 
