@@ -94,14 +94,10 @@ void handle_boot(void)
 
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
-    
-    if(size > 16385){
-        size = 16385;
-    }
 
     // move firmware to boot, but dont include the password
     for (i = 0; i < size-16; i++) {
-        *((uint8_t *)(FIRMWARE_STORAGE_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
+        *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
     // acknowledge host
