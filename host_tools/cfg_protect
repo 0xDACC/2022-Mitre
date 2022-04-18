@@ -35,16 +35,16 @@ def protect_configuration(raw_cfg: Path, protected_cfg: Path):
     iv = Path("/secrets/iv").read_bytes()
     password = Path("/secrets/password").read_bytes()
 
-    # We will also pad on extra data to make it divisible by 1024, which will make it easier to do the next few steps.
+    # We will also pad on extra data to make it divisible by 16 for encryption
     padded_cfg = file_data
-    padded_cfg += (b'\xFF' * ((1024 - len(file_data) % 1024) % 1024))
+    padded_cfg += (b'\xFF' * ((16 - len(file_data) % 16) % 16))
 
     # add passwords
-    padded_cfg = password + padded_cfg + password
+    padded_p_cfg = password + padded_cfg + password
 
     # encrypt
     cipher = AES.new(key, AES.MODE_CBC, iv)
-    encrypted_cfg = cipher.encrypt(padded_cfg)
+    encrypted_cfg = cipher.encrypt(padded_p_cfg)
 
     log.info("Packaging the configuration...")
 
