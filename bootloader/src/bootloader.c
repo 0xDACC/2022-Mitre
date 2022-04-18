@@ -95,10 +95,8 @@ void handle_boot(void)
     // Find the metadata
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
     
-    // If the size is -1 then we know that there has not been a firmware installed, or something was tampered with
-    if(size == 0xFFFFFFFF){
-        //no firmware installed
-        uart_writeb(HOST_UART, FRAME_BAD);
+    if(size > 16385){
+        size = 16385;
     }
 
     // move firmware to boot, but dont include the password
@@ -349,6 +347,8 @@ void handle_update(void)
     load_data(HOST_UART, FIRMWARE_STORAGE_PTR, size-32);
 
     size -= 32;
+
+    flash_write_word(size, FIRMWARE_SIZE_PTR);
 
     // Only save new version if it is not 0
     if(version != 0){
