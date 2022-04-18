@@ -395,7 +395,7 @@ void handle_configure(void)
     uint8_t pbuff[16];
 
     // Acknowledge the host
-    uart_writeb(HOST_UART, 'U');
+    uart_writeb(HOST_UART, 'C');
     
     // Catch second byte
     uart_writeb(HOST_UART, FRAME_OK);
