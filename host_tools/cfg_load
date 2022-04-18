@@ -52,7 +52,7 @@ def load_configuration(socket_number: int, config_file: Path):
 
         # Sending first password section
         log.info("sending first password")
-        send_packets(configuration[0:16])
+        send_packets(sock, configuration[0:16])
         
         # Recieve crypto information
         log.info("recieving key")
