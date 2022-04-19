@@ -20,59 +20,35 @@ Below is a step by step guide on how each host tool works, including diagrams wh
 ## CFG Protect
 1. Read raw CFG binary
 2. Read crypto information from host secrets
-3. Pad data to make it a multiple of 1024
-4. Split data into 1KB chunks
-5. Add authentication password to end of each chunk
-6. Encrypt each chunk individually
-7. Combine into 1 protected data package
-8. Write out to file
+3. Pad data to make it a multiple of 16
+4. Add authentication password to beginning and end of data
+5. Encrypt padded and signed data
 
 Below is a diagram representing the layout of a protected CFG file.
 
 ```
-[1024 Bytes of CFG data]
-[16 Bytes of authentication data]
+[16B password][Config Data][16B password]
+``` 
 
-[1024 Bytes of CFG data]
-[16 Bytes of authentication data]
-
-[1024 Bytes of CFG data]
-[16 Bytes of authentication data]
-
-[1024 Bytes of CFG data]
-[16 Bytes of authentication data]
-
-[1024 Bytes of CFG data]
-[16 Bytes of authentication data]
-```
-
-These chunks are combined into one monolithic .prot file which will be deciphered by the CFG load tool and bootloader
-
-This repetition of the authentication password for every 1kb chunk also means that for every 1KB of CFG data, the size of the protected file will be 16B longer than the unprotected version.
-
-The reasoning for this added complexity is due to the memory limitations on the tiva device. The device only has 32KB of RAM, and at any given moment, its not reasonable to hold more than about 4KB in memory without special care being taken, and even that is frustrating. In order to A) Meet functionality requirements and B) Prevent bugs from automatic allocation of this much memory, we have elected to split the config into chunks of 1KB of data + 16B of authentication data.  
+Due to the nature of CBC encryption, if any byte within the protected file is changed, then at least one (usually the second) authentication password will be incorrect, thus allowing for a type of integrity check
 
 ## CFG Load
-1. Connect to bootloader
-2. Negotiate with bootloader to enter configure mode
-3. Send CFG size
-4. Send over the CFG data in 1KB + 16B blocks (1KB of data and 16B of authentication data)
-5. Rinse and repeat until the whole file has been sent and checked for authenticity
+1. Negotiate with the host to enter configure mode
+2. Read the config size from the host
+3. Host sends first 16 bytes of encrypted config (the first authentication password) to bootloader
+4. Bootloader decrypts and confirms this authentication password
+5. If the password is correct, the bootloader sends over the cryptographic key and iv to the host
+6. Host decrypts config
+7. Host sends last 16 bytes of decrypted config (the second authentication password) for confirmation from bootloader
+8. If the bootloader confirms this password, then the host sends the now unencrypted configuration to the bootloader for installation
 
-Rather than send all of the (potentially 64KB) data at once, the tool breaks the protected file into 1040 byte long chunks, and further breaks those down into a 1KB data frame, and a 16B password frame and sends these in seperate actions and awaits a boot loader response for each individual frame. 
-
-```
-[1KB data frame]        -->     [Bootloader]
-[16B password frame]    -->     [Bootloader]
-
-[Bootloader determins authenticity] --> [Data frame] --> [Flash memory]
-```
+Originally there was no host side decryption, which would be vastly more secure. However, due to the slow speed of the TIVA device (32khz) it would take nearly 2 minutes to decrypt and load a full 64K configuration file. The decision to make most decryption host side was made in order to fit into the 25 second timing requirement.
 
 ## FW Protect
 1. Read in raw FW Binary
 2. Read crypto information
 3. Pad firmware to be compatably with AES-128 bit
-4. Add authentication password to end
+4. Add authentication password to beginning and end
 5. Encrypt
 6. Perform logic on capping off version number
 7. Pad version number
@@ -80,26 +56,35 @@ Rather than send all of the (potentially 64KB) data at once, the tool breaks the
 9. Pack firmware size, version number, release message, and firmware data into JSON file
 10. Write out file
 
-The fw protection is a little more simple, due to the smaller size of the firmware
+The fw protection is a little more complicated due to extra things like the release message being required to be packed alongside the actual firmware data.
 
 Below is a diagram of a protected firmware file
 
 ```
 Json File:
     [2B Firmware size],
-    [16B Encrypted Firmware Version] + [16B Version password],
+    [16B Encrypted Firmware Version][16B Version password],
     [Up to 1KB release message],
-    [Up to 16KB encrypted firmware] + [16B Authentication password]
+    [16B password][Firmware Data][16B password]
 ```
 
 ## Fw Update
-1. Negotiate with bootloader to enter update mode
-2. Send version number, and wait for authentication
-3. Send firmware size
-4. Send release message
-5. Send firmware data, and wait for authentication
+1. Negotiate with the host to enter update mode
+2. Read the encrypted version from the host
+3. Read the size of the firmware from the host
+4. Read the release message from the host
+5. Decrypt the version for authentication
+   *If the version or the authentication password is invalid the bootloader rejects the update*
+6. Host sends first 16 bytes of encrypted firmware (the first authentication password) to bootloader
+7. Bootloader decrypts and confirms this authentication password
+8. If the password is correct, the bootloader sends over the cryptographic key and iv to the host
+9. Host decrypts firmware
+10. Host sends last 16 bytes of decrypted firmware (the second authentication password) for confirmation from bootloader
+11. If the bootloader confirms this password, then the host sends the now unencrypted firmware to the bootloader for installation
 
-In contrast to the configuration, the bootloader recieves and digests the ENTIRE firmware data at once, rather than splitting into 1KB chunks. Due to limitations of automatic memory allocation, there is a pointer (named LONG_BUFFER_START_PTR) pointing to the latest point in memory where 16KB + 16B can be stored in a continuous chain in memory without overwriting anything else, or without trying to access invalid memory. After about 4KB, the compiler and bootloader gets confused when trying to allocate a buffer location, and it tries to read invalid memmory addresses. 
+Similarly to the configuration, there previously was no host side decryption. Again, the timing requirements made this a neccessity.
+
+Originally, the entire 16K firmware was sent at one time, with an authentication password attatched. Due to RAM limitations and quirks of the way the RAM works on the physical device, though, this proved to be unreliable on anything but the emulated environment.
 
 ## Readback
 1. Negotiate with bootloader to enter readback mode
