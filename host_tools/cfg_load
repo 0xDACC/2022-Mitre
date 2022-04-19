@@ -57,17 +57,34 @@ def load_configuration(socket_number: int, config_file: Path):
 
         # Send first password section
         send_packets(sock, configuration[0:16])
-        
-        # recieve crypto information
-        log.info("recieving key")
-        key = sock.recv(16)
-        log.info("recieving iv")
-        iv = sock.recv(16)
 
-        # Decrypt
-        log.info("decrypting")
-        cip = AES.new(key, AES.MODE_CBC, iv)
-        dec_fw = cip.decrypt(configuration)
+        # Try loop
+        trying = True
+
+        while trying:
+            try:
+                # recieve crypto information
+                log.info("recieving key")
+                key = sock.recv(16)
+                log.info("recieving iv")
+                iv = sock.recv(16)
+
+                # Decrypt
+                log.info("decrypting")
+                cip = AES.new(key, AES.MODE_CBC, iv)
+                dec_fw = cip.decrypt(configuration)
+
+                # it worked
+                sock.send(RESP_OK)
+
+                # it worked thank god
+                trying = False
+
+            except ValueError:
+                sock.send(b'\x01')
+                log.info("retrying decryption")
+
+        
 
         # Send last password to bootloader to decide if this is a valid image
         log.info("sending second password")

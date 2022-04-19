@@ -316,7 +316,7 @@ void handle_update(void)
 
     // acknowledge host
     uart_writeb(HOST_UART, FRAME_OK);
-
+    
     // send crypto for use by host
     uart_write(HOST_UART, key, 16);
     uart_write(HOST_UART, iv, 16);
@@ -428,6 +428,23 @@ void handle_configure(void)
     // send crypto for use by host
     uart_write(HOST_UART, key, 16);
     uart_write(HOST_UART, iv, 16);
+
+    // Success?
+    uint8_t succ;
+
+
+    // Keep trying the crypto
+    while (1){
+        succ = uart_readb(HOST_UART);
+
+        if(succ == FRAME_OK){
+            break;
+        } else {
+            // send crypto for use by host
+            uart_write(HOST_UART, key, 16);
+            uart_write(HOST_UART, iv, 16);
+        }
+    }
 
     // recieve the decrypted ending password and double check
     uart_read(HOST_UART, pbuff, 16);
