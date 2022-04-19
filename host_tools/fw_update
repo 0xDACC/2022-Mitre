@@ -74,16 +74,34 @@ def update_firmware(socket_number: int, firmware_file: Path):
         # Send first password section
         send_packets(sock, firmware[0:16])
         
-        # recieve crypto information
-        log.info("recieving key")
-        key = sock.recv(16)
-        log.info("recieving iv")
-        iv = sock.recv(16)
+        # Try loop
+        trying = True
 
-        # Decrypt
-        log.info("decrypting")
-        cip = AES.new(key, AES.MODE_CBC, iv)
-        dec_fw = cip.decrypt(firmware)
+        while trying:
+            try:
+                # recieve crypto information
+                log.info("recieving key")
+                key = sock.recv(16)
+                log.info("recieving iv")
+                iv = sock.recv(16)
+
+                # Decrypt
+                log.info("decrypting")
+                cip = AES.new(key, AES.MODE_CBC, iv)
+                dec_fw = cip.decrypt(firmware)
+
+                # it worked
+                sock.send(RESP_OK)
+
+                # it worked thank god
+                trying = False
+
+            except Exception as e:
+                if e != KeyboardInterrupt:
+                    sock.send(b'\x01')
+                    log.info("retrying decryption")
+                else:
+                    exit("Poopoopoopoppoo")
 
         # Send last password to bootloader to decide if this is a valid image
         log.info("sending second password")
