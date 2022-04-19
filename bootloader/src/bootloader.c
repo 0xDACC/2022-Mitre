@@ -3,6 +3,9 @@
  * @author 0xDACC Team (github.com/0xDACC)
  * @brief  The secure bootloader which meets all the functional and security requirements.
  * 
+ * This was written by a 17 year old who has never written C code before, so please prepare yourself for some *questionable* code
+ * Enjoy :)
+ * 
  * @version 1.2
  * @date 2022-4-6
  * 
@@ -48,6 +51,8 @@
 
 #define CONFIGURATION_METADATA_PTR ((uint32_t)(FIRMWARE_STORAGE_PTR + (FLASH_PAGE_SIZE*16)))
 // Note: This is 16 bytes offset from the reference design because we need to have the password for the firmware stored where this would be
+
+// New note: Thats not true, we dont need it to be changed anymore, i am just terrfied to change anything at this point :)
 #define CONFIGURATION_SIZE_PTR     ((uint32_t)(CONFIGURATION_METADATA_PTR + 16))
 
 #define CONFIGURATION_STORAGE_PTR  ((uint32_t)(CONFIGURATION_METADATA_PTR + FLASH_PAGE_SIZE))
@@ -252,7 +257,7 @@ void handle_update(void)
 
     // Acknowledge the host
     uart_writeb(HOST_UART, 'U');
-    // Catch second byte
+    // We found the ghost byte would be wacky right about here sometimes, so we decided to add this extra thing here
     uart_writeb(HOST_UART, 'G');
 
     // Receive version, store in buffer for decryption
@@ -342,6 +347,7 @@ void handle_update(void)
     //load firmware
     load_data(HOST_UART, FIRMWARE_STORAGE_PTR, size-32);
 
+    // Since 32 bytes of our size measurement is password data we subtract 32 from our size count
     size -= 32;
 
     flash_write_word(size, FIRMWARE_SIZE_PTR);
@@ -450,6 +456,7 @@ void handle_configure(void)
     //load firmware
     load_data(HOST_UART, CONFIGURATION_STORAGE_PTR, size-32);
 
+    // Since 32 bytes of our config is password data, we need to remove that from the total count
     size -= 32;
 
     // and after all that we will know the true size of the config, so we can now write it
@@ -480,6 +487,7 @@ int main(void){
 
     // Convert those 4 bytes of 32 bits into 16 bytes of 8 bits
     // There has to be an easier way to do this LOL
+    // Update: Stack overflow has said this was unneccesary but has not explained a better way to do it. Sounds about right
     key[0] = key32[0];
     key[1] = key32[0] >> 8;
     key[2] = key32[0] >> 16;
