@@ -74,6 +74,9 @@ def update_firmware(socket_number: int, firmware_file: Path):
         # Send first password section
         send_packets(sock, firmware[0:16])
         
+        key = b''
+        iv = b''
+
         # Try loop
         trying = True
 
