@@ -96,7 +96,7 @@ void handle_boot(void)
     size = *((uint32_t *)FIRMWARE_SIZE_PTR);
 
     // move firmware to boot, but dont include the password
-    for (i = 0; i < size-16; i++) {
+    for (i = 0; i < size; i++) {
         *((uint8_t *)(FIRMWARE_BOOT_PTR + i)) = *((uint8_t *)(FIRMWARE_STORAGE_PTR + i));
     }
 
