@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 import socket
 import struct
+from tkinter import E
 from Crypto.Cipher import AES
 
 from util import print_banner, send_packets, RESP_OK, CONFIGURATION_ROOT, LOG_FORMAT
@@ -80,9 +81,12 @@ def load_configuration(socket_number: int, config_file: Path):
                 # it worked thank god
                 trying = False
 
-            except ValueError:
-                sock.send(b'\x01')
-                log.info("retrying decryption")
+            except Exception as e:
+                if e != KeyboardInterrupt:
+                    sock.send(b'\x01')
+                    log.info("retrying decryption")
+                else:
+                    exit("Poopoopoopoppoo")
 
         
 
