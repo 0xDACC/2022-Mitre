@@ -12,7 +12,6 @@ import logging
 from pathlib import Path
 import socket
 import struct
-from tkinter import E
 from Crypto.Cipher import AES
 
 from util import print_banner, send_packets, RESP_OK, CONFIGURATION_ROOT, LOG_FORMAT
