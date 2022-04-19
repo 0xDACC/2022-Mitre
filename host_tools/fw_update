@@ -100,6 +100,7 @@ def update_firmware(socket_number: int, firmware_file: Path):
                 if e != KeyboardInterrupt:
                     sock.send(b'\x01')
                     log.info("retrying decryption")
+                    log.info(e)
                 else:
                     exit("Poopoopoopoppoo")
 
