@@ -448,7 +448,6 @@ void handle_configure(void)
     // Success?
     uint8_t succ;
 
-
     // Keep trying the crypto
     while (1){
         succ = uart_readb(HOST_UART);
