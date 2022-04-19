@@ -57,12 +57,8 @@ def load_configuration(socket_number: int, config_file: Path):
 
         # Send first password section
         send_packets(sock, configuration[0:16])
-
-        # Wait until bootloader sends second confirmation because sometimes an extra byte is send
-        log.info("Waiting for ghost byte")
-        while sock.recv(1) != b'\x00':
-            pass
-
+        key = b''
+        iv = b''
         # Try loop
         trying = True
 
@@ -70,9 +66,12 @@ def load_configuration(socket_number: int, config_file: Path):
             try:
                 # recieve crypto information
                 log.info("recieving key")
-                key = sock.recv(16)
+                for i in range(0, 16):
+                    key += sock.recv(1)
+                
                 log.info("recieving iv")
-                iv = sock.recv(16)
+                for i in range(0, 16):
+                    iv += sock.recv(1)
 
                 # Decrypt
                 log.info("decrypting")

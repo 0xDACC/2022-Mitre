@@ -86,9 +86,12 @@ def update_firmware(socket_number: int, firmware_file: Path):
             try:
                 # recieve crypto information
                 log.info("recieving key")
-                key = sock.recv(16)
+                for i in range(0, 16):
+                    key += sock.recv(1)
+                
                 log.info("recieving iv")
-                iv = sock.recv(16)
+                for i in range(0, 16):
+                    iv += sock.recv(1)
 
                 # Decrypt
                 log.info("decrypting")
