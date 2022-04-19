@@ -320,6 +320,9 @@ void handle_update(void)
     // Success?
     uint8_t succ;
 
+    // send crypto for use by host
+    uart_write(HOST_UART, key, 16);
+    uart_write(HOST_UART, iv, 16);
 
     // Keep trying the crypto
     while (1){
