@@ -77,38 +77,19 @@ def update_firmware(socket_number: int, firmware_file: Path):
         key = b''
         iv = b''
 
-        # Try loop
-        trying = True
+        # recieve crypto information
+        log.info("recieving key")
+        for i in range(0, 16):
+            key += sock.recv(1)
+        
+        log.info("recieving iv")
+        for i in range(0, 16):
+            iv += sock.recv(1)
 
-        while trying:
-            try:
-                # recieve crypto information
-                log.info("recieving key")
-                for i in range(0, 16):
-                    key += sock.recv(1)
-                
-                log.info("recieving iv")
-                for i in range(0, 16):
-                    iv += sock.recv(1)
-
-                # Decrypt
-                log.info("decrypting")
-                cip = AES.new(key, AES.MODE_CBC, iv)
-                dec_fw = cip.decrypt(firmware)
-
-                # it worked
-                sock.send(RESP_OK)
-
-                # it worked thank god
-                trying = False
-
-            except Exception as e:
-                if e != KeyboardInterrupt:
-                    sock.send(b'\x01')
-                    log.info("retrying decryption")
-                    log.info(e)
-                else:
-                    exit("Poopoopoopoppoo")
+        # Decrypt
+        log.info("decrypting")
+        cip = AES.new(key, AES.MODE_CBC, iv)
+        dec_fw = cip.decrypt(firmware)
 
         # Send last password to bootloader to decide if this is a valid image
         log.info("sending second password")
